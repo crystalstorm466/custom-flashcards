@@ -17,11 +17,6 @@
 #include <QStatusBar>
 #include <QFrame>
 #include <fstream>
-#include "rapidjson/document.h"
-#include <iostream>
-
-using namespace std;
-using namespace rapidjson;
 
 
 
