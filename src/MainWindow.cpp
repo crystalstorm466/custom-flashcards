@@ -9,6 +9,7 @@
 #include <QLabel>
 #include <QTabWidget>
 #include <QMenuBar>
+#include <QFont>
 #include <QMenu>
 #include <QAction>
 #include <QFileDialog>
@@ -16,6 +17,12 @@
 #include <QStatusBar>
 #include <QFrame>
 #include <fstream>
+#include "rapidjson/document.h"
+#include <iostream>
+
+using namespace std;
+using namespace rapidjson;
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -28,10 +35,10 @@ MainWindow::MainWindow(QWidget *parent)
     setupUi();
 
     // Starter seed cards for demonstration
-    m_deck.addCard(Flashcard("What does Qt's 'signals and slots' mechanism provide?",
-                             "A type-safe way for objects to communicate with each other."));
-    m_deck.addCard(Flashcard("Which tool automates compilation for Qt projects?",
-                             "CMake or QMake (with moc, uic, and rcc)."));
+    m_deck.addCard(Flashcard("Who is Charlie Kirk?",
+                             "He saved America"));
+    m_deck.addCard(Flashcard("What is Arch Linux?",
+                             "A Linux distro."));
 
     refreshCardList();
     updateStudyView();
@@ -54,7 +61,7 @@ void MainWindow::setupMenu() {
     connect(exportAction, &QAction::triggered, this, &MainWindow::onExportDeck);
 
     QAction* exportPDF = fileMenu->addAction("&Exprot Deck (PDF)...");
-    exportPDF->setShortcut(QKeySequence::Save);
+    exportPDF->setShortcut(QKeySequence::Print);
     connect(exportPDF, &QAction::triggered, this, &MainWindow::onExportPDF);
 
     fileMenu->addSeparator();
@@ -284,6 +291,7 @@ void MainWindow::onExportDeck() {
     statusBar()->showMessage(QString("Deck exported to %1").arg(filePath), 5000);
 }
 
+
 void MainWindow::onExportPDF() {
     if (m_deck.count() == 0) {
         QMessageBox::warning(this, "Export PDF", "The deck is currently empty. Add cards before exporting.");
@@ -330,34 +338,88 @@ void MainWindow::onExportPDF() {
         << "endobj\n";
 
 //   std::string stream_data = "BT /F1 24 Tf 100 700 Td (Hello from Qt and standard C++) Tj ET"; //this is our stream that we write to it.
+        double fontSize = 10.0;
+        double lineHeight = 14.0;
+        QFont font("Helvetica", static_cast<int>(fontSize));
+        QFontMetrics fm(font);
 
-        std::string text = "dynamic label";
-        double fontSize = 14.0;
-        double estimatedTextWidth = text.length() * (fontSize * 0.5);
+        QString ques = m_deck.at(m_currentStudyIndex).front();
+        QString ans = m_deck.at(m_currentStudyIndex).back();
 
-        double startX = 100.0;
-        double startY = 700.0;
-        double smallBox = 20.0;
+        // Page layout: Letter size is 612 x 792 points
+        double startX = 40.0;
+        double startY = 680.0;
+        double gap = 20.0;
+        double boxWidth = (612.0 - (2 * startX) - gap) / 2.0; // 256 pt each
+        double innerPadding = 12.0;
+        int maxTextWidth = static_cast<int>(boxWidth - (2 * innerPadding));
 
+        // Helper: split text into multiple lines so it fits within maxTextWidth
+        auto wrapText = [](const QString& text, const QFontMetrics& metrics, int maxWidth) -> QStringList {
+            QStringList words = text.split(' ', Qt::SkipEmptyParts);
+            QStringList lines;
+            QString currentLine;
+            for (const QString& word : words) {
+                QString candidate = currentLine.isEmpty() ? word : currentLine + " " + word;
+                if (metrics.horizontalAdvance(candidate) <= maxWidth) {
+                    currentLine = candidate;
+                } else {
+                    if (!currentLine.isEmpty()) lines.append(currentLine);
+                    currentLine = word;
+                }
+            }
+            if (!currentLine.isEmpty()) lines.append(currentLine);
+            return lines;
+        };
 
-        std::string stream_data =
-        "0.5 w 0 G"                            // Set line width
-         //draw a box
-        + std::to_string(startX) + " " + std::to_string(startY) + " "
-        + std::to_string(smallBox) + " " + std::to_string(smallBox) + " re S"
+        QStringList quesLines = wrapText(ques, fm, maxTextWidth);
+        QStringList ansLines  = wrapText(ans, fm, maxTextWidth);
 
-        //draw a background box
-        + std::to_string(startX + 30) + " " + std::to_string(startY - 2) + " "
-        + std::to_string(estimatedTextWidth + 20) + " 24 re S "
+        // Adjust box height to accommodate the box with the most lines
+        int maxLineCount = std::max({1, static_cast<int>(quesLines.size()), static_cast<int>(ansLines.size())});
+        double boxHeight = std::max(60.0, (innerPadding * 2) + (maxLineCount * lineHeight));
 
-        // 3. Place the text inside that relative-sized box
-        + "BT /F1 " + std::to_string((int)fontSize) + " Tf "
-        + std::to_string(startX + 40) + " " + std::to_string(startY + 6) + " Td ("
-        + text + ") Tj ET";
+        double box1X = startX;
+        double box2X = box1X + boxWidth + gap;
 
+        // Draw the two side-by-side boxes
+        QString streamData = QString(
+            "0.5 w 0 G\n"
+            // Box 1 (Question border)
+            "%1 %2 %3 %4 re S\n"
+            // Box 2 (Answer border)
+            "%5 %2 %3 %4 re S\n"
+        )
+        .arg(box1X)
+        .arg(startY)
+        .arg(boxWidth)
+        .arg(boxHeight)
+        .arg(box2X);
+
+        // Helper: generate PDF text commands for wrapped lines
+        auto formatPdfTextBlock = [](const QStringList& lines, double x, double topY, double size, double leading) -> QString {
+            QString block = QString("BT /F1 %1 Tf %2 %3 Td\n").arg(size).arg(x).arg(topY);
+            for (int i = 0; i < lines.size(); ++i) {
+                QString safeLine = lines[i];
+                safeLine.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)");
+                if (i > 0) {
+                    block += QString("0 -%1 Td\n").arg(leading); // Move down for next line
+                }
+                block += QString("(%1) Tj\n").arg(safeLine);
+            }
+            block += "ET\n";
+            return block;
+        };
+
+        // Render Question and Answer text inside their respective boxes
+        double textTopY = startY + boxHeight - innerPadding - (fontSize * 0.85);
+        streamData += formatPdfTextBlock(quesLines, box1X + innerPadding, textTopY, fontSize, lineHeight);
+        streamData += formatPdfTextBlock(ansLines,  box2X + innerPadding, textTopY, fontSize, lineHeight);
+
+        std::string stream_data = streamData.toStdString();
         record_offset();
         file << "4 0 obj\n<< /Length " << stream_data.length() << " >>\n"
-        << "stream\n" << stream_data << "\nendstream\nendobj\n";
+        << "stream\n" << stream_data << "\nendstream\nendobj\n"; //prints to PDF
 
         // Object 5: Font Resource
         record_offset();
