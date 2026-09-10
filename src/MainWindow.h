@@ -1,6 +1,8 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QLabel>
+#include <QMouseEvent>
 #include "Deck.h"
 
 class QLineEdit;
@@ -9,6 +11,21 @@ class QListWidget;
 class QLabel;
 class QPushButton;
 class QTabWidget;
+
+class ClickableLabel : public QLabel {
+    Q_OBJECT
+public:
+    explicit ClickableLabel (QWidget* parent = nullptr) : QLabel(parent) {}
+    ~ClickableLabel() = default;
+
+signals:
+    void clicked();
+protected:
+    void mousePressEvent(QMouseEvent* event) override {
+        emit clicked();
+        QLabel::mousePressEvent(event);
+    }
+};
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -51,7 +68,7 @@ private:
 
     // UI Widgets - Study Tab
     QTabWidget* m_tabWidget = nullptr;
-    QLabel* m_studyCardDisplay = nullptr;
+    ClickableLabel* m_studyCardDisplay = nullptr;
     QLabel* m_studyProgressLabel = nullptr;
     QPushButton* m_flipButton = nullptr;
     QPushButton* m_prevButton = nullptr;

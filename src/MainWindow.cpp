@@ -24,6 +24,8 @@ using namespace std;
 using namespace rapidjson;
 
 
+
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_deck("Starter Deck")
@@ -84,9 +86,9 @@ void MainWindow::setupUi() {
     // Form to create a card
     QFormLayout* formLayout = new QFormLayout();
     m_frontInput = new QLineEdit();
-    m_frontInput->setPlaceholderText("e.g., What is RAII in C++?");
+    m_frontInput->setPlaceholderText("Ask a question!");
     m_backInput = new QLineEdit();
-    m_backInput->setPlaceholderText("e.g., Resource Acquisition Is Initialization");
+    m_backInput->setPlaceholderText("You get an answer.");
 
     formLayout->addRow("<b>Question (Front):</b>", m_frontInput);
     formLayout->addRow("<b>Answer (Back):</b>", m_backInput);
@@ -131,7 +133,7 @@ void MainWindow::setupUi() {
     studyLayout->addWidget(m_studyProgressLabel);
 
     // Flashcard Display Box
-    m_studyCardDisplay = new QLabel();
+    m_studyCardDisplay = new ClickableLabel(this);
     m_studyCardDisplay->setAlignment(Qt::AlignCenter);
     m_studyCardDisplay->setWordWrap(true);
     m_studyCardDisplay->setFrameShape(QFrame::StyledPanel);
@@ -149,6 +151,7 @@ void MainWindow::setupUi() {
     m_flipButton = new QPushButton("🔄 Flip Card");
     m_flipButton->setStyleSheet("font-size: 14px; padding: 8px; font-weight: bold;");
     connect(m_flipButton, &QPushButton::clicked, this, &MainWindow::onFlipCardClicked);
+    connect(m_studyCardDisplay, &ClickableLabel::clicked, this, &MainWindow::onFlipCardClicked);
     studyLayout->addWidget(m_flipButton);
 
     // Navigation Buttons (Prev / Next)
