@@ -52,3 +52,5 @@ CMakeLists.txt.user.*
 # Operating System files
 .DS_Store
 Thumbs.db
+deck.json
+deck.pdf
