@@ -3,6 +3,7 @@
 #include <QMainWindow>
 #include <QLabel>
 #include <QMouseEvent>
+#include <QRadioButton>
 #include "Deck.h"
 
 class QLineEdit;
@@ -11,7 +12,7 @@ class QListWidget;
 class QLabel;
 class QPushButton;
 class QTabWidget;
-
+class QCheckBox;
 class ClickableLabel : public QLabel {
     Q_OBJECT
 public:
@@ -33,6 +34,7 @@ class MainWindow : public QMainWindow {
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override = default;
+    bool shuffleEnabled;
 
 private slots:
     // Card Management Slots
@@ -60,7 +62,7 @@ private:
 
     // Application Data
     Deck m_deck;
-
+    Deck m_backupDeck;
     // UI Widgets - Manage Tab
     QLineEdit* m_frontInput = nullptr;
     QLineEdit* m_backInput = nullptr;
@@ -71,7 +73,7 @@ private:
     QTabWidget* m_tabWidget = nullptr;
     ClickableLabel* m_studyCardDisplay = nullptr;
     QLabel* m_studyProgressLabel = nullptr;
-    ClickableLabel* m_shuffleCards = nullptr;
+    QCheckBox* m_shuffleCards = nullptr;
     QPushButton* m_flipButton = nullptr;
     QPushButton* m_prevButton = nullptr;
     QPushButton* m_nextButton = nullptr;

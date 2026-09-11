@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(Flashcards VERSION 1.0.0 LANGUAGES CXX)
+project(flashcards VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -22,8 +22,8 @@ set(SOURCES
     src/MainWindow.cpp
 )
 
-add_executable(Flashcards ${SOURCES})
+add_executable(flashcards ${SOURCES})
 
-target_link_libraries(Flashcards PRIVATE
+target_link_libraries(flashcards PRIVATE
     Qt6::Widgets
 )

@@ -20,5 +20,5 @@ To Compile:
     
 ```
 
-Run the Flashcards binary inside build/ to run the program. 
+Run the flashcards binary inside build/ to run the program. 
 
