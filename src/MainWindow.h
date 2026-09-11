@@ -68,7 +68,7 @@ private:
     QLineEdit* m_backInput = nullptr;
     QListWidget* m_cardListWidget = nullptr;
     QLabel* m_statusLabel = nullptr;
-
+    QWidget m_aboutWindow;
     // UI Widgets - Study Tab
     QTabWidget* m_tabWidget = nullptr;
     ClickableLabel* m_studyCardDisplay = nullptr;

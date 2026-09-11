@@ -10,6 +10,7 @@ int main(int argc, char *argv[]) {
     QApplication::setOrganizationName("StudyTools");
 
     MainWindow window;
+    MainWindow about_window;
     window.show();
 
     return app.exec();

@@ -23,7 +23,7 @@
 #include <fstream>
 #include <random>
 #include <iostream>
-
+#include <QApplication>
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -68,6 +68,13 @@ void MainWindow::setupMenu() {
     exportPDF->setShortcut(QKeySequence::Print);
     connect(exportPDF, &QAction::triggered, this, &MainWindow::onExportPDF);
 
+
+    m_aboutWindow.resize(320, 240);
+    m_aboutWindow.setWindowTitle(
+        QApplication::translate("toplevel", "Top-level widget"));
+    //QAction* openAbout = fileMenu->addAction("&About Flashcards..");
+    QAction* openAbout = menuBar()->addAction("&About Flashcards..");
+    connect(openAbout, &QAction::triggered, &m_aboutWindow, &QWidget::show);
     fileMenu->addSeparator();
 
     QAction* exitAction = fileMenu->addAction("E&xit");
