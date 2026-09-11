@@ -18,9 +18,12 @@ public:
     int count() const;
     const Flashcard& at(int index) const;
 
-    void addCard(const Flashcard& card);
+    void addCard(Flashcard card);
     bool removeCard(int index);
     void clear();
+    void reindexCards();
+    auto begin() { return m_cards.begin(); }
+    auto end() { return m_cards.end(); }
 
     // Export / Save to a JSON file
     bool saveToFile(const QString& filePath, QString* errorMessage = nullptr) const;
@@ -34,4 +37,5 @@ public:
 private:
     QString m_title;
     QList<Flashcard> m_cards;
+
 };

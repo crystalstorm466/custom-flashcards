@@ -3,12 +3,14 @@
 Flashcard::Flashcard()
     : m_front("")
     , m_back("")
+    , m_index(0)
 {
 }
 
-Flashcard::Flashcard(const QString& front, const QString& back)
+Flashcard::Flashcard(const QString& front, const QString& back, int index)
     : m_front(front)
     , m_back(back)
+    , m_index(index)
 {
 }
 
@@ -27,11 +29,17 @@ QString Flashcard::back() const {
 void Flashcard::setBack(const QString& back) {
     m_back = back;
 }
-
+void Flashcard::setIndex(int index) {
+    m_index = index; //used only when displaying "card __ of ___ "
+}
+int Flashcard::getIndex() const {
+    return m_index;
+}
 QJsonObject Flashcard::toJson() const {
     QJsonObject json;
     json["front"] = m_front;
     json["back"] = m_back;
+    json["index"] = m_index;
     return json;
 }
 
@@ -42,6 +50,9 @@ Flashcard Flashcard::fromJson(const QJsonObject& json) {
     }
     if (json.contains("back") && json["back"].isString()) {
         card.setBack(json["back"].toString());
+    }
+    if (json.contains("index")) {
+        card.setIndex(json["index"].toInt());
     }
     return card;
 }

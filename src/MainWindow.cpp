@@ -16,6 +16,8 @@
 #include <QMessageBox>
 #include <QStatusBar>
 #include <QFrame>
+#include <algorithm>
+#include <cstdio>
 #include <fstream>
 #include <random>
 #include <iostream>
@@ -188,7 +190,19 @@ void MainWindow::setupUi() {
 }
 
 void MainWindow::onShuffle() {
-    if (!shuffleYes) { shuffleYes = true; } else { shuffleYes = false; }
+    if (m_deck.count() <= 1) {
+        statusBar()->showMessage("Add at least 2 cards to shuffle.", 3000);
+        return;
+    }
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::shuffle(m_deck.begin(), m_deck.end(), gen);
+
+    m_currentStudyIndex = 0;
+    m_isShowingAnswer = false;
+    updateStudyView();
+    statusBar()->showMessage("Shuffled!", 4000);
 }
 void MainWindow::refreshCardList() {
     m_cardListWidget->clear();
@@ -492,7 +506,7 @@ void MainWindow::updateStudyView() {
 
     m_studyProgressLabel->setText(
         QString("Card %1 of %2  (%3)")
-            .arg(m_currentStudyIndex + 1)
+            .arg(currentCard.getIndex())
             .arg(m_deck.count())
             .arg(m_isShowingAnswer ? "Answer" : "Question")
     );
@@ -537,21 +551,10 @@ void MainWindow::onPrevCardClicked() {
 }
 
 void MainWindow::onNextCardClicked() {
-
     if (m_currentStudyIndex < m_deck.count() - 1) {
-        if (shuffleYes) {
-            std::random_device rd;
-            std::mt19937 gen(rd());
-            std::uniform_int_distribution<int> distrib(0, m_deck.count() - 1);
-            int rng = distrib(gen);
-            m_currentStudyIndex = rng;
-            updateStudyView();
-            return;
-        }
-
-            ++m_currentStudyIndex;
-            m_isShowingAnswer = false; // Reset to question side
-            updateStudyView();
-        }
+        ++m_currentStudyIndex;
+        m_isShowingAnswer = false; // Reset to question side
+        updateStudyView();
     }
+}
 
