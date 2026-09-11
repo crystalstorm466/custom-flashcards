@@ -57,7 +57,7 @@ void MainWindow::setupMenu() {
     exportAction->setShortcut(QKeySequence::Save);
     connect(exportAction, &QAction::triggered, this, &MainWindow::onExportDeck);
 
-    QAction* exportPDF = fileMenu->addAction("&Exprot Deck (PDF)...");
+    QAction* exportPDF = fileMenu->addAction("&Export Deck (PDF)...");
     exportPDF->setShortcut(QKeySequence::Print);
     connect(exportPDF, &QAction::triggered, this, &MainWindow::onExportPDF);
 
