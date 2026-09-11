@@ -75,6 +75,8 @@ void MainWindow::setupMenu() {
     //QAction* openAbout = fileMenu->addAction("&About Flashcards..");
     QAction* openAbout = menuBar()->addAction("&About Flashcards..");
     connect(openAbout, &QAction::triggered, &m_aboutWindow, &QWidget::show);
+    setupAbout();
+
     fileMenu->addSeparator();
 
     QAction* exitAction = fileMenu->addAction("E&xit");
@@ -82,6 +84,13 @@ void MainWindow::setupMenu() {
     connect(exitAction, &QAction::triggered, this, &QWidget::close);
 }
 
+void MainWindow::setupAbout() {
+    QVBoxLayout *aboutLayout = new QVBoxLayout(&m_aboutWindow);
+    QLabel  *aboutLabel = new QLabel("Flashcard study\nCreated with QT and C++");
+    QLabel  *authorLabel = new QLabel("Created by crystalstorm466");
+    aboutLayout->addWidget(aboutLabel);
+    aboutLayout->addWidget(authorLabel);
+}
 void MainWindow::setupUi() {
     m_tabWidget = new QTabWidget(this);
     setCentralWidget(m_tabWidget);

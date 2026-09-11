@@ -53,6 +53,7 @@ private slots:
     void onNextCardClicked();
     void onPrevCardClicked();
     void onShuffle();
+    void setupAbout();
 
 private:
     void setupUi();
