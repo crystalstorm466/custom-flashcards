@@ -12,7 +12,7 @@ class QListWidget;
 class QLabel;
 class QPushButton;
 class QTabWidget;
-
+class QCheckBox;
 class ClickableLabel : public QLabel {
     Q_OBJECT
 public:
@@ -72,7 +72,7 @@ private:
     QTabWidget* m_tabWidget = nullptr;
     ClickableLabel* m_studyCardDisplay = nullptr;
     QLabel* m_studyProgressLabel = nullptr;
-    QRadioButton* m_shuffleCards = nullptr;
+    QCheckBox* m_shuffleCards = nullptr;
     QPushButton* m_flipButton = nullptr;
     QPushButton* m_prevButton = nullptr;
     QPushButton* m_nextButton = nullptr;

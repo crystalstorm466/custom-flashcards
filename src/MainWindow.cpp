@@ -15,6 +15,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QStatusBar>
+#include <QCheckBox>
 #include <QFrame>
 #include <algorithm>
 #include <cstdio>
@@ -144,26 +145,51 @@ void MainWindow::setupUi() {
     );
     studyLayout->addWidget(m_studyCardDisplay, 1);
 
-    m_shuffleCards = new QRadioButton("Shuffle", this);
-    // m_shuffleCards->setAlignment(Qt::AlignRight);
+    m_shuffleCards = new QCheckBox("Shuffle", this);
+    //m_shuffleCards->setAlignment(Qt::AlignRight);
     // m_shuffleCards->setWordWrap(true);
     // m_shuffleCards->setFrameShape(QFrame::StyledPanel);
     // m_shuffleCards->setMinimumHeight(200);
     // m_shuffleCards->setStyleSheet(
-    //     "background-color: #fcfcfc; "
-    //     "border: 2px solid #aaa; "
-    //     "border-radius: 12px; "
-    //     "font-size: 18px; "
-    //     "padding: 20px;"
+    //     "spacing: 10px;"
+    //     "color: #333333;"
+    //     "background-color: #f8f9fa; "
+    //     "border: 1px solid #dcdcdc; "
+    //     "border-radius: 6px; "
+    //     "font-size: 13px; "
+    //     "padding: 6px 12px;"
     // );
 
+    m_shuffleCards->setStyleSheet(
+        "QCheckBox {"
+        "    spacing: 8px;"
+        "    font-size: 13px;"
+        "    color: #333333;"
+        "    padding: 8px 12px;"
+        "    background-color: #f8f9fa;"
+        "    border: 1px solid #dcdcdc;"
+        "    border-radius: 6px;"
+        "}"
+        "QCheckBox::indicator {"
+        "    width: 16px;"
+        "    height: 16px;"
+        "    border-radius: 2px;"
+        "    border: 2px solid #adb5bd;"
+        "    background-color: #ffffff;"
+        "}"
+        "QCheckBox::indicator:checked {"
+        "    background-color: #228be6;"
+        "    border-color: #1c7ed6;"
+        "}"
+    );
     studyLayout->addWidget(m_shuffleCards, 1);
 
     connect(m_shuffleCards, &QRadioButton::toggled, this, &MainWindow::onShuffle);
 
     // Flip Card Button
     m_flipButton = new QPushButton("🔄 Flip Card");
-    m_flipButton->setStyleSheet("font-size: 14px; padding: 8px; font-weight: bold;");
+   m_flipButton->setStyleSheet("font-size: 14px; padding: 8px; font-weight: bold;");
+
     connect(m_flipButton, &QPushButton::clicked, this, &MainWindow::onFlipCardClicked);
     connect(m_studyCardDisplay, &ClickableLabel::clicked, this, &MainWindow::onFlipCardClicked);
     studyLayout->addWidget(m_flipButton);
