@@ -391,6 +391,7 @@ void MainWindow::onExportDeck() {
 
 
 void MainWindow::onExportPDF() {
+    //TODO actually export the entire json to pdf not just the first question
     if (m_deck.count() == 0) {
         QMessageBox::warning(this, "Export PDF", "The deck is currently empty. Add cards before exporting.");
         return;
