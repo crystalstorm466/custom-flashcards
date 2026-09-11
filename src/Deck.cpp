@@ -1,4 +1,5 @@
 #include "Deck.h"
+#include "Flashcard.h"
 
 #include <QFile>
 #include <QJsonDocument>
@@ -30,16 +31,26 @@ const Flashcard& Deck::at(int index) const {
     return m_cards.at(index);
 }
 
-void Deck::addCard(const Flashcard& card) {
+void Deck::addCard(Flashcard card) {
+    if (card.getIndex() <= 0) {
+        card.setIndex(m_cards.size() + 1);
+    }
     m_cards.append(card);
 }
 
 bool Deck::removeCard(int index) {
     if (index >= 0 && index < m_cards.size()) {
         m_cards.removeAt(index);
+        reindexCards();
         return true;
     }
     return false;
+}
+
+void Deck::reindexCards() {
+    for (int i = 0; i < m_cards.size(); ++i) {
+        m_cards[i].setIndex(i + 1);
+    }
 }
 
 void Deck::clear() {
@@ -108,6 +119,7 @@ bool Deck::loadFromFile(const QString& filePath, QString* errorMessage) {
             m_cards.append(Flashcard::fromJson(cardVal.toObject()));
         }
     }
+    reindexCards();
 
     return true;
 }
@@ -147,6 +159,7 @@ bool Deck::appendFromFile(const QString& filePath, QString* errorMessage) {
             m_cards.append(Flashcard::fromJson(cardVal.toObject()));
         }
     }
+    reindexCards();
 
     return true;
 }
