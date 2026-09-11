@@ -1,4 +1,5 @@
 #include "MainWindow.h"
+#include "Deck.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -35,11 +36,14 @@ MainWindow::MainWindow(QWidget *parent)
     setupMenu();
     setupUi();
 
+
     // Starter seed cards for demonstration
     m_deck.addCard(Flashcard("Who is Charlie Kirk?",
                              "He saved America"));
     m_deck.addCard(Flashcard("What is Arch Linux?",
                              "A Linux distro."));
+    Deck m_backupDeck = m_deck;
+
     refreshCardList();
     updateStudyView();
     statusBar()->showMessage("Welcome! You can add cards, import/export decks, or switch to Study mode.", 5000);
@@ -144,7 +148,8 @@ void MainWindow::setupUi() {
         "padding: 20px;"
     );
     studyLayout->addWidget(m_studyCardDisplay, 1);
-
+    QHBoxLayout *shuffleAndFlip = new QHBoxLayout();
+    //shuffleAndFlip = QHBoxLayout();
     m_shuffleCards = new QCheckBox("Shuffle", this);
     //m_shuffleCards->setAlignment(Qt::AlignRight);
     // m_shuffleCards->setWordWrap(true);
@@ -182,17 +187,19 @@ void MainWindow::setupUi() {
         "    border-color: #1c7ed6;"
         "}"
     );
-    studyLayout->addWidget(m_shuffleCards, 1);
-
-    connect(m_shuffleCards, &QRadioButton::toggled, this, &MainWindow::onShuffle);
 
     // Flip Card Button
     m_flipButton = new QPushButton("🔄 Flip Card");
-   m_flipButton->setStyleSheet("font-size: 14px; padding: 8px; font-weight: bold;");
+    m_flipButton->setStyleSheet("font-size: 14px; padding: 8px; font-weight: bold;");
 
     connect(m_flipButton, &QPushButton::clicked, this, &MainWindow::onFlipCardClicked);
     connect(m_studyCardDisplay, &ClickableLabel::clicked, this, &MainWindow::onFlipCardClicked);
-    studyLayout->addWidget(m_flipButton);
+    connect(m_shuffleCards, &QCheckBox::toggled, this, &MainWindow::onShuffle);
+
+    // Place Flip Button and Shuffle Checkbox side-by-side
+    shuffleAndFlip->addWidget(m_shuffleCards, 0);
+    shuffleAndFlip->addWidget(m_flipButton, 1);
+    studyLayout->addLayout(shuffleAndFlip);
 
     // Navigation Buttons (Prev / Next)
     QHBoxLayout* navLayout = new QHBoxLayout();
@@ -216,11 +223,21 @@ void MainWindow::setupUi() {
 }
 
 void MainWindow::onShuffle() {
+
+    if (m_shuffleCards->checkState() == Qt::Unchecked) {
+        m_deck = m_backupDeck;
+        refreshCardList();
+        m_currentStudyIndex = 0;
+        m_isShowingAnswer = false;
+        updateStudyView();
+        statusBar()->showMessage("Restored to default!", 4000);
+        m_shuffleCards->setCheckState(Qt::Unchecked);
+        return;
+    }
     if (m_deck.count() <= 1) {
         statusBar()->showMessage("Add at least 2 cards to shuffle.", 3000);
         return;
     }
-
     std::random_device rd;
     std::mt19937 gen(rd());
     std::shuffle(m_deck.begin(), m_deck.end(), gen);
@@ -253,6 +270,7 @@ void MainWindow::onAddCardClicked() {
     }
 
     m_deck.addCard(Flashcard(front, back));
+    m_backupDeck = m_deck;
     m_frontInput->clear();
     m_backInput->clear();
     m_frontInput->setFocus();
@@ -273,6 +291,7 @@ void MainWindow::onDeleteCardClicked() {
     if (m_currentStudyIndex >= m_deck.count()) {
         m_currentStudyIndex = std::max(0, m_deck.count() - 1);
     }
+    m_backupDeck = m_deck;
 
     refreshCardList();
     updateStudyView();
@@ -318,6 +337,7 @@ void MainWindow::onImportDeck() {
 
     m_currentStudyIndex = 0;
     m_isShowingAnswer = false;
+    m_backupDeck = m_deck;
     refreshCardList();
     updateStudyView();
     statusBar()->showMessage(QString("Imported deck successfully with %1 cards.").arg(m_deck.count()), 5000);

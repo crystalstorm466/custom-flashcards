@@ -34,6 +34,7 @@ class MainWindow : public QMainWindow {
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override = default;
+    bool shuffleEnabled;
 
 private slots:
     // Card Management Slots
@@ -61,7 +62,7 @@ private:
 
     // Application Data
     Deck m_deck;
-
+    Deck m_backupDeck;
     // UI Widgets - Manage Tab
     QLineEdit* m_frontInput = nullptr;
     QLineEdit* m_backInput = nullptr;
