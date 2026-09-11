@@ -441,10 +441,6 @@ void MainWindow::onExportPDF() {
         double lineHeight = 14.0;
         QFont font("Helvetica", static_cast<int>(fontSize));
         QFontMetrics fm(font);
-
-        QString ques = m_deck.at(m_currentStudyIndex).front();
-        QString ans = m_deck.at(m_currentStudyIndex).back();
-
         // Page layout: Letter size is 612 x 792 points
         double startX = 40.0;
         double startY = 680.0;
@@ -471,30 +467,6 @@ void MainWindow::onExportPDF() {
             return lines;
         };
 
-        QStringList quesLines = wrapText(ques, fm, maxTextWidth);
-        QStringList ansLines  = wrapText(ans, fm, maxTextWidth);
-
-        // Adjust box height to accommodate the box with the most lines
-        int maxLineCount = std::max({1, static_cast<int>(quesLines.size()), static_cast<int>(ansLines.size())});
-        double boxHeight = std::max(60.0, (innerPadding * 2) + (maxLineCount * lineHeight));
-
-        double box1X = startX;
-        double box2X = box1X + boxWidth + gap;
-
-        // Draw the two side-by-side boxes
-        QString streamData = QString(
-            "0.5 w 0 G\n"
-            // Box 1 (Question border)
-            "%1 %2 %3 %4 re S\n"
-            // Box 2 (Answer border)
-            "%5 %2 %3 %4 re S\n"
-        )
-        .arg(box1X)
-        .arg(startY)
-        .arg(boxWidth)
-        .arg(boxHeight)
-        .arg(box2X);
-
         // Helper: generate PDF text commands for wrapped lines
         auto formatPdfTextBlock = [](const QStringList& lines, double x, double topY, double size, double leading) -> QString {
             QString block = QString("BT /F1 %1 Tf %2 %3 Td\n").arg(size).arg(x).arg(topY);
@@ -510,15 +482,52 @@ void MainWindow::onExportPDF() {
             return block;
         };
 
-        // Render Question and Answer text inside their respective boxes
-        double textTopY = startY + boxHeight - innerPadding - (fontSize * 0.85);
-        streamData += formatPdfTextBlock(quesLines, box1X + innerPadding, textTopY, fontSize, lineHeight);
-        streamData += formatPdfTextBlock(ansLines,  box2X + innerPadding, textTopY, fontSize, lineHeight);
+
+        QString streamData;
+       for (int i = 0; i < m_deck.count() - 1; i++) {
+            QString current_ques = m_deck.at(i).front();
+            QString current_ans = m_deck.at(i).back();
+            QStringList quesLines = wrapText(current_ques, fm, maxTextWidth);
+            QStringList ansLines  = wrapText(current_ans, fm, maxTextWidth);
+            // Adjust box height to accommodate the box with the most lines
+            int maxLineCount = std::max({1, static_cast<int>(quesLines.size()), static_cast<int>(ansLines.size())});
+            double boxHeight = std::max(60.0, (innerPadding * 2) + (maxLineCount * lineHeight));
+
+
+            double box1X = startX;
+            double box2X = box1X + boxWidth + gap;
+
+            // Draw the two side-by-side boxes
+             streamData += QString(
+                "0.5 w 0 G\n"
+                // Box 1 (Question border)
+                "%1 %2 %3 %4 re S\n"
+                // Box 2 (Answer border)
+                "%5 %2 %3 %4 re S\n"
+            )
+            .arg(box1X)
+            .arg(startY + (i * -100))
+            .arg(boxWidth)
+            .arg(boxHeight)
+            .arg(box2X);
+
+
+            // Render Question and Answer text inside their respective boxes
+            double textTopY = (startY + (i * -100 ))+ boxHeight - innerPadding - (fontSize * 0.85);
+            streamData += formatPdfTextBlock(quesLines, box1X + innerPadding, textTopY, fontSize, lineHeight);
+            streamData += formatPdfTextBlock(ansLines,  box2X + innerPadding, textTopY, fontSize, lineHeight);
+
+
+
+        }
+
+
 
         std::string stream_data = streamData.toStdString();
         record_offset();
         file << "4 0 obj\n<< /Length " << stream_data.length() << " >>\n"
         << "stream\n" << stream_data << "\nendstream\nendobj\n"; //prints to PDF
+
 
         // Object 5: Font Resource
         record_offset();
