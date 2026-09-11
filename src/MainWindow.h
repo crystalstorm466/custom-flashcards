@@ -3,6 +3,7 @@
 #include <QMainWindow>
 #include <QLabel>
 #include <QMouseEvent>
+#include <QRadioButton>
 #include "Deck.h"
 
 class QLineEdit;
@@ -71,7 +72,7 @@ private:
     QTabWidget* m_tabWidget = nullptr;
     ClickableLabel* m_studyCardDisplay = nullptr;
     QLabel* m_studyProgressLabel = nullptr;
-    ClickableLabel* m_shuffleCards = nullptr;
+    QRadioButton* m_shuffleCards = nullptr;
     QPushButton* m_flipButton = nullptr;
     QPushButton* m_prevButton = nullptr;
     QPushButton* m_nextButton = nullptr;

@@ -144,22 +144,22 @@ void MainWindow::setupUi() {
     );
     studyLayout->addWidget(m_studyCardDisplay, 1);
 
-    m_shuffleCards = new ClickableLabel(this);
-    m_shuffleCards->setAlignment(Qt::AlignRight);
-    m_shuffleCards->setWordWrap(true);
-    m_shuffleCards->setFrameShape(QFrame::StyledPanel);
-    m_shuffleCards->setMinimumHeight(200);
-    m_shuffleCards->setStyleSheet(
-        "background-color: #fcfcfc; "
-        "border: 2px solid #aaa; "
-        "border-radius: 12px; "
-        "font-size: 18px; "
-        "padding: 20px;"
-    );
+    m_shuffleCards = new QRadioButton("Shuffle", this);
+    // m_shuffleCards->setAlignment(Qt::AlignRight);
+    // m_shuffleCards->setWordWrap(true);
+    // m_shuffleCards->setFrameShape(QFrame::StyledPanel);
+    // m_shuffleCards->setMinimumHeight(200);
+    // m_shuffleCards->setStyleSheet(
+    //     "background-color: #fcfcfc; "
+    //     "border: 2px solid #aaa; "
+    //     "border-radius: 12px; "
+    //     "font-size: 18px; "
+    //     "padding: 20px;"
+    // );
 
     studyLayout->addWidget(m_shuffleCards, 1);
 
-    connect(m_shuffleCards, &ClickableLabel::clicked, this, &MainWindow::onShuffle);
+    connect(m_shuffleCards, &QRadioButton::toggled, this, &MainWindow::onShuffle);
 
     // Flip Card Button
     m_flipButton = new QPushButton("🔄 Flip Card");
