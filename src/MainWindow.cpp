@@ -35,7 +35,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     setupMenu();
     setupUi();
-
+    setupAbout();
 
     // Starter seed cards for demonstration
     m_deck.addCard(Flashcard("Who is Charlie Kirk?",
@@ -75,7 +75,6 @@ void MainWindow::setupMenu() {
     //QAction* openAbout = fileMenu->addAction("&About Flashcards..");
     QAction* openAbout = menuBar()->addAction("&About Flashcards..");
     connect(openAbout, &QAction::triggered, &m_aboutWindow, &QWidget::show);
-    setupAbout();
 
     fileMenu->addSeparator();
 
