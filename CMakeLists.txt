@@ -20,6 +20,7 @@ set(SOURCES
     src/Deck.cpp
     src/MainWindow.h
     src/MainWindow.cpp
+    resources/resources.qrc
 )
 
 add_executable(flashcards ${SOURCES})

@@ -13,6 +13,7 @@ class QLabel;
 class QPushButton;
 class QTabWidget;
 class QCheckBox;
+class QPixmap;
 class ClickableLabel : public QLabel {
     Q_OBJECT
 public:

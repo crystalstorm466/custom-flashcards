@@ -24,7 +24,7 @@
 #include <random>
 #include <iostream>
 #include <QApplication>
-
+#include <QPixmap>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -88,8 +88,13 @@ void MainWindow::setupAbout() {
     QVBoxLayout *aboutLayout = new QVBoxLayout(&m_aboutWindow);
     QLabel  *aboutLabel = new QLabel("Flashcard study\nCreated with QT and C++");
     QLabel  *authorLabel = new QLabel("Created by crystalstorm466");
+
+    QLabel *image = new QLabel(this);
+    QPixmap pixmap(":/Izzy.jpg");
+    image->setPixmap (pixmap.scaled(200, 200, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     aboutLayout->addWidget(aboutLabel);
     aboutLayout->addWidget(authorLabel);
+    aboutLayout->addWidget(image);
 }
 void MainWindow::setupUi() {
     m_tabWidget = new QTabWidget(this);
