@@ -145,20 +145,19 @@ void MainWindow::setupUi() {
     studyLayout->addWidget(m_studyCardDisplay, 1);
 
     m_shuffleCards = new ClickableLabel(this);
-    m_shuffleCards->setText("🔀 Shuffle Cards");
-    m_shuffleCards->setAlignment(Qt::AlignCenter);
-    m_shuffleCards->setCursor(Qt::PointingHandCursor);
-    m_shuffleCards->setFixedHeight(40);
+    m_shuffleCards->setAlignment(Qt::AlignRight);
+    m_shuffleCards->setWordWrap(true);
+    m_shuffleCards->setFrameShape(QFrame::StyledPanel);
+    m_shuffleCards->setMinimumHeight(200);
     m_shuffleCards->setStyleSheet(
-        "background-color: #f1f5f9; "
-        "border: 1px solid #cbd5e1; "
-        "border-radius: 8px; "
-        "font-size: 14px; "
-        "font-weight: bold; "
-        "color: #334155;"
+        "background-color: #fcfcfc; "
+        "border: 2px solid #aaa; "
+        "border-radius: 12px; "
+        "font-size: 18px; "
+        "padding: 20px;"
     );
 
-    studyLayout->addWidget(m_shuffleCards);
+    studyLayout->addWidget(m_shuffleCards, 1);
 
     connect(m_shuffleCards, &ClickableLabel::clicked, this, &MainWindow::onShuffle);
 
