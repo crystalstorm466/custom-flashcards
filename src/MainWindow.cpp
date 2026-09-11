@@ -17,7 +17,8 @@
 #include <QStatusBar>
 #include <QFrame>
 #include <fstream>
-
+#include <random>
+#include <iostream>
 
 
 
@@ -36,7 +37,6 @@ MainWindow::MainWindow(QWidget *parent)
                              "He saved America"));
     m_deck.addCard(Flashcard("What is Arch Linux?",
                              "A Linux distro."));
-
     refreshCardList();
     updateStudyView();
     statusBar()->showMessage("Welcome! You can add cards, import/export decks, or switch to Study mode.", 5000);
@@ -142,6 +142,23 @@ void MainWindow::setupUi() {
     );
     studyLayout->addWidget(m_studyCardDisplay, 1);
 
+    m_shuffleCards = new ClickableLabel(this);
+    m_shuffleCards->setAlignment(Qt::AlignRight);
+    m_shuffleCards->setWordWrap(true);
+    m_shuffleCards->setFrameShape(QFrame::StyledPanel);
+    m_shuffleCards->setMinimumHeight(200);
+    m_shuffleCards->setStyleSheet(
+        "background-color: #fcfcfc; "
+        "border: 2px solid #aaa; "
+        "border-radius: 12px; "
+        "font-size: 18px; "
+        "padding: 20px;"
+    );
+
+    studyLayout->addWidget(m_shuffleCards, 1);
+
+    connect(m_shuffleCards, &ClickableLabel::clicked, this, &MainWindow::onShuffle);
+
     // Flip Card Button
     m_flipButton = new QPushButton("🔄 Flip Card");
     m_flipButton->setStyleSheet("font-size: 14px; padding: 8px; font-weight: bold;");
@@ -170,6 +187,9 @@ void MainWindow::setupUi() {
     });
 }
 
+void MainWindow::onShuffle() {
+    if (!shuffleYes) { shuffleYes = true; } else { shuffleYes = false; }
+}
 void MainWindow::refreshCardList() {
     m_cardListWidget->clear();
     for (int i = 0; i < m_deck.count(); ++i) {
@@ -517,9 +537,21 @@ void MainWindow::onPrevCardClicked() {
 }
 
 void MainWindow::onNextCardClicked() {
+
     if (m_currentStudyIndex < m_deck.count() - 1) {
-        ++m_currentStudyIndex;
-        m_isShowingAnswer = false; // Reset to question side
-        updateStudyView();
+        if (shuffleYes) {
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<int> distrib(0, m_deck.count() - 1);
+            int rng = distrib(gen);
+            m_currentStudyIndex = rng;
+            updateStudyView();
+            return;
+        }
+
+            ++m_currentStudyIndex;
+            m_isShowingAnswer = false; // Reset to question side
+            updateStudyView();
+        }
     }
-}
+

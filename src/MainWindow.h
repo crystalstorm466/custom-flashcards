@@ -50,6 +50,7 @@ private slots:
     void onFlipCardClicked();
     void onNextCardClicked();
     void onPrevCardClicked();
+    void onShuffle();
 
 private:
     void setupUi();
@@ -70,6 +71,7 @@ private:
     QTabWidget* m_tabWidget = nullptr;
     ClickableLabel* m_studyCardDisplay = nullptr;
     QLabel* m_studyProgressLabel = nullptr;
+    ClickableLabel* m_shuffleCards = nullptr;
     QPushButton* m_flipButton = nullptr;
     QPushButton* m_prevButton = nullptr;
     QPushButton* m_nextButton = nullptr;
@@ -77,4 +79,6 @@ private:
     // Study state
     int m_currentStudyIndex = 0;
     bool m_isShowingAnswer = false;
+    bool shuffleYes = false;
+
 };
