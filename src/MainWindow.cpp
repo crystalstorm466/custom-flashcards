@@ -507,11 +507,13 @@ void MainWindow::onExportPDF() {
             qDebug() << "line 505 starting printing streamdata array page " << page;
             sixloop++;
 
-                if (sixloop>= 6) { sixloop = 0; page++; qDebug() << sixloop; }
+                if (sixloop>= 6 || i == m_deck.count() - 1) { sixloop = 0; page++; qDebug() << sixloop; }
 
 
 
         }
+        int totalPage = page;
+        int totalObj = 3 + (totalPage * 2);
         std::vector<long> offsets;
 
         file << "%PDF-1.4\n";
@@ -523,22 +525,37 @@ void MainWindow::onExportPDF() {
         file << "1 0 obj\n << /Type /Catalog /Pages 2 0 R >>\nendobj\n";
 
         QStringList kids;
+        for (int i = 0; i < totalPage; ++i) {
+            int pageObjNum = 4+ (i*2);
+            kids.append(QString("%1 0 R").arg(pageObjNum));
+        }
+        QString kidsString = "[" + kids.join(" ") + "]";
+        record_offset();
+        file << "2 0 obj\n<< /Type /Pages /Kids " << kidsString.toStdString() << " /Count " << page << " >>\nendobj\n";
+        //count = # of pages in the pdf
+        // kids = array of pages must match count.
+
+        // Object 3: Font Resource
+        record_offset();
+        file << "3 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n";
+
         for (int i = 0; i < page; ++i) {
-            int pageObjNum = 3 + (i * 3);
+            int pageObjNum = 4 + (i * 2);
             int contentObjNum = pageObjNum + 1;
             int fontObjNum = 5;
 
 
-            // Object 3: Page Definition
+            // Object 4: Page Definition
             record_offset();
             file << pageObjNum <<" 0 obj\n"
             << "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
-            << "/Contents " << contentObjNum << " 0 R /Resources << /Font << /F1 5 0 R >> >> >>\n"
+            << "/Contents " << contentObjNum << " 0 R /Resources << /Font << /F1 3 0 R >> >> >>\n"
             << "endobj\n";
 
             //   std::string stream_data = "BT /F1 24 Tf 100 700 Td (Hello from Qt and standard C++) Tj ET"; //this is our stream that we write to it.
 
             //std::string stream_data = streamData.toStdString();
+            //Object 5
             std::string stream_data;
                 qDebug() << streamDataArray.at(i).toStdString();
                 stream_data += streamDataArray.at(i).toStdString();
@@ -548,36 +565,24 @@ void MainWindow::onExportPDF() {
 
 
 
-            kids.append(QString("%1 0 R").arg(pageObjNum));
         }
-        QString kidsString = "[" + kids.join(" ") + "]";
-
-        record_offset();
-        file << "2 0 obj\n<< /Type /Pages /Kids " << kidsString.toStdString() << " /Count " << page << " >>\nendobj\n";
-        //count = # of pages in the pdf
-        // kids = array of pages must match count.
 
 
 
-        // Object 5: Font Resource
-        record_offset();
-        file << "5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n";
         long xref_offset = file.tellp();
 
         // Write Cross-Reference Table
-        record_offset();
-        file << "xref\n0 " << (offsets.size() + 1) << "\n";
-        record_offset();
+        file << "xref\n0 " << (totalObj+1) << "\n";
         file << "0000000000 65535 f \n";
-        for (long off : offsets) {
+        for (int i = 0; i < totalObj; ++i) {
             char num_buf[32];
-            snprintf(num_buf, sizeof(num_buf), "%010ld", off);
+            snprintf(num_buf, sizeof(num_buf), "%010ld", offsets[i]);
             file << num_buf << " 00000 n \n";
         }
 
         // Write Trailer and EOF marker
-        record_offset();
-        file << "trailer\n<< /Size " << (offsets.size() + 1) << " /Root 1 0 R >>\n"
+
+        file << "trailer\n<< /Size " << (totalObj+1) << " /Root 1 0 R >>\n"
         << "startxref\n" << xref_offset << "\n%%EOF\n";
         file.flush();
         file.close();
