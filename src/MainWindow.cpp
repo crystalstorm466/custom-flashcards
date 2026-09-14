@@ -42,6 +42,7 @@ MainWindow::MainWindow(QWidget *parent)
                              "He saved America"));
     m_deck.addCard(Flashcard("What is Arch Linux?",
                              "A Linux distro."));
+
     Deck m_backupDeck = m_deck;
 
     refreshCardList();
@@ -391,6 +392,7 @@ void MainWindow::onExportDeck() {
 
 
 void MainWindow::onExportPDF() {
+    //TODO actually export the entire json to pdf not just the first question
     if (m_deck.count() == 0) {
         QMessageBox::warning(this, "Export PDF", "The deck is currently empty. Add cards before exporting.");
         return;
@@ -415,35 +417,11 @@ void MainWindow::onExportPDF() {
     std::ofstream file(filePath.toStdString(), std::ios::binary);
     #endif
 
-    std::vector<long> offsets;
 
-    file << "%PDF-1.4\n";
-    auto record_offset = [&]() {
-        offsets.push_back(file.tellp());
-    };
-
-    record_offset();
-    file << "1 0 obj\n << /Type /Catalog /Pages 2 0 R >>\nendobj\n";
-
-    record_offset();
-    file << "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n";
-
-    // Object 3: Page Definition
-    record_offset();
-    file << "3 0 obj\n"
-        << "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
-        << "/Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\n"
-        << "endobj\n";
-
-//   std::string stream_data = "BT /F1 24 Tf 100 700 Td (Hello from Qt and standard C++) Tj ET"; //this is our stream that we write to it.
         double fontSize = 10.0;
         double lineHeight = 14.0;
         QFont font("Helvetica", static_cast<int>(fontSize));
         QFontMetrics fm(font);
-
-        QString ques = m_deck.at(m_currentStudyIndex).front();
-        QString ans = m_deck.at(m_currentStudyIndex).back();
-
         // Page layout: Letter size is 612 x 792 points
         double startX = 40.0;
         double startY = 680.0;
@@ -470,30 +448,6 @@ void MainWindow::onExportPDF() {
             return lines;
         };
 
-        QStringList quesLines = wrapText(ques, fm, maxTextWidth);
-        QStringList ansLines  = wrapText(ans, fm, maxTextWidth);
-
-        // Adjust box height to accommodate the box with the most lines
-        int maxLineCount = std::max({1, static_cast<int>(quesLines.size()), static_cast<int>(ansLines.size())});
-        double boxHeight = std::max(60.0, (innerPadding * 2) + (maxLineCount * lineHeight));
-
-        double box1X = startX;
-        double box2X = box1X + boxWidth + gap;
-
-        // Draw the two side-by-side boxes
-        QString streamData = QString(
-            "0.5 w 0 G\n"
-            // Box 1 (Question border)
-            "%1 %2 %3 %4 re S\n"
-            // Box 2 (Answer border)
-            "%5 %2 %3 %4 re S\n"
-        )
-        .arg(box1X)
-        .arg(startY)
-        .arg(boxWidth)
-        .arg(boxHeight)
-        .arg(box2X);
-
         // Helper: generate PDF text commands for wrapped lines
         auto formatPdfTextBlock = [](const QStringList& lines, double x, double topY, double size, double leading) -> QString {
             QString block = QString("BT /F1 %1 Tf %2 %3 Td\n").arg(size).arg(x).arg(topY);
@@ -509,35 +463,128 @@ void MainWindow::onExportPDF() {
             return block;
         };
 
-        // Render Question and Answer text inside their respective boxes
-        double textTopY = startY + boxHeight - innerPadding - (fontSize * 0.85);
-        streamData += formatPdfTextBlock(quesLines, box1X + innerPadding, textTopY, fontSize, lineHeight);
-        streamData += formatPdfTextBlock(ansLines,  box2X + innerPadding, textTopY, fontSize, lineHeight);
 
-        std::string stream_data = streamData.toStdString();
-        record_offset();
-        file << "4 0 obj\n<< /Length " << stream_data.length() << " >>\n"
-        << "stream\n" << stream_data << "\nendstream\nendobj\n"; //prints to PDF
+        QString streamData;
+        int page = 0;
+        int quesCounter = 0;
+        int sixloop = 0;
+        QList<QString> streamDataArray(m_deck.count());
+       for (int i = 0; i < m_deck.count(); i++) {
+            QString current_ques = m_deck.at(i).front();
+            QString current_ans = m_deck.at(i).back();
+            QStringList quesLines = wrapText(current_ques, fm, maxTextWidth);
+            QStringList ansLines  = wrapText(current_ans, fm, maxTextWidth);
+            qDebug() << "current_ques: " << current_ques;
+            // Adjust box height to accommodate the box with the most lines
+            int maxLineCount = std::max({1, static_cast<int>(quesLines.size()), static_cast<int>(ansLines.size())});
+            double boxHeight = std::max(60.0, (innerPadding * 2) + (maxLineCount * lineHeight));
 
-        // Object 5: Font Resource
+
+            double box1X = startX;
+            double box2X = box1X + boxWidth + gap;
+            double currentY = startY + (sixloop * -100); //calculate y position for 6 questions / page
+            // Draw the two side-by-side boxes
+             streamDataArray[page] += QString(
+                "0.5 w 0 G\n"
+                // Box 1 (Question border)
+                "%1 %2 %3 %4 re S\n"
+                // Box 2 (Answer border)
+                "%5 %2 %3 %4 re S\n"
+            )
+            .arg(box1X)
+            .arg(currentY)
+            .arg(boxWidth)
+            .arg(boxHeight)
+            .arg(box2X);
+
+            // Render Question and Answer text inside their respective boxes
+            double textTopY = (currentY + boxHeight - innerPadding - (fontSize * 0.85)); //y = -600 end of page. ( 7 questions)
+            streamDataArray[page] += formatPdfTextBlock(quesLines, box1X + innerPadding, textTopY, fontSize, lineHeight);
+            streamDataArray[page] += formatPdfTextBlock(ansLines,  box2X + innerPadding, textTopY, fontSize, lineHeight);
+
+            //array of streamdatas that holds like 6 strings
+            //at the end a for loop to run file << 3 o obj....
+            qDebug() << "line 505 starting printing streamdata array page " << page;
+            sixloop++;
+
+                if (sixloop>= 6 || i == m_deck.count() - 1) { sixloop = 0; page++; qDebug() << sixloop; }
+
+
+
+        }
+        int totalPage = page;
+        int totalObj = 3 + (totalPage * 2);
+        std::vector<long> offsets;
+
+        file << "%PDF-1.4\n";
+        auto record_offset = [&]() {
+            offsets.push_back(file.tellp());
+        };
+
         record_offset();
-        file << "5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n";
+        file << "1 0 obj\n << /Type /Catalog /Pages 2 0 R >>\nendobj\n";
+
+        QStringList kids;
+        for (int i = 0; i < totalPage; ++i) {
+            int pageObjNum = 4+ (i*2);
+            kids.append(QString("%1 0 R").arg(pageObjNum));
+        }
+        QString kidsString = "[" + kids.join(" ") + "]";
+        record_offset();
+        file << "2 0 obj\n<< /Type /Pages /Kids " << kidsString.toStdString() << " /Count " << page << " >>\nendobj\n";
+        //count = # of pages in the pdf
+        // kids = array of pages must match count.
+
+        // Object 3: Font Resource
+        record_offset();
+        file << "3 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n";
+
+        for (int i = 0; i < page; ++i) {
+            int pageObjNum = 4 + (i * 2);
+            int contentObjNum = pageObjNum + 1;
+            int fontObjNum = 5;
+
+
+            // Object 4: Page Definition
+            record_offset();
+            file << pageObjNum <<" 0 obj\n"
+            << "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+            << "/Contents " << contentObjNum << " 0 R /Resources << /Font << /F1 3 0 R >> >> >>\n"
+            << "endobj\n";
+
+            //   std::string stream_data = "BT /F1 24 Tf 100 700 Td (Hello from Qt and standard C++) Tj ET"; //this is our stream that we write to it.
+
+            //std::string stream_data = streamData.toStdString();
+            //Object 5
+            std::string stream_data;
+                qDebug() << streamDataArray.at(i).toStdString();
+                stream_data += streamDataArray.at(i).toStdString();
+            record_offset();
+            file << contentObjNum << " 0 obj\n<< /Length " << stream_data.length() << " >>\n"
+            << "stream\n" << stream_data << "\nendstream\nendobj\n"; //prints to PDF
+
+
+
+        }
+
+
 
         long xref_offset = file.tellp();
 
         // Write Cross-Reference Table
-        file << "xref\n0 " << (offsets.size() + 1) << "\n";
+        file << "xref\n0 " << (totalObj+1) << "\n";
         file << "0000000000 65535 f \n";
-        for (long off : offsets) {
+        for (int i = 0; i < totalObj; ++i) {
             char num_buf[32];
-            snprintf(num_buf, sizeof(num_buf), "%010ld", off);
+            snprintf(num_buf, sizeof(num_buf), "%010ld", offsets[i]);
             file << num_buf << " 00000 n \n";
         }
 
         // Write Trailer and EOF marker
-        file << "trailer\n<< /Size " << (offsets.size() + 1) << " /Root 1 0 R >>\n"
-        << "startxref\n" << xref_offset << "\n%%EOF\n";
 
+        file << "trailer\n<< /Size " << (totalObj+1) << " /Root 1 0 R >>\n"
+        << "startxref\n" << xref_offset << "\n%%EOF\n";
+        file.flush();
         file.close();
         qDebug() << "PDF generated successfully at:" << filePath;
 
