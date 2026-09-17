@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 #include "Deck.h"
+#include "vimBinds.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -19,12 +20,20 @@
 #include <QCheckBox>
 #include <QFrame>
 #include <algorithm>
+#include <cctype>
 #include <cstdio>
 #include <fstream>
+#include <qcoreevent.h>
+#include <qevent.h>
+#include <qkeysequence.h>
+#include <qnamespace.h>
+#include <qshortcut.h>
 #include <random>
 #include <iostream>
 #include <QApplication>
 #include <QPixmap>
+#include <QShortcut>
+#include <QKeyCombination>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -33,11 +42,11 @@ MainWindow::MainWindow(QWidget *parent)
     //TODO Going to implement VIM keybinds
     setWindowTitle("Flashcard Study App");
     resize(700, 550);
+    setupUi();
 
     setupMenu();
-    setupUi();
     setupAbout();
-
+    vimBinds::setupVim();
     // Starter seed cards for demonstration
     m_deck.addCard(Flashcard("Who is Charlie Kirk?",
                              "He saved America"));
@@ -49,6 +58,9 @@ MainWindow::MainWindow(QWidget *parent)
     refreshCardList();
     updateStudyView();
     statusBar()->showMessage("Welcome! You can add cards, import/export decks, or switch to Study mode.", 5000);
+    QShortcut* insertMode = new QShortcut(QKeySequence(Qt::Key_Insert), this);
+    connect(insertMode, &QShortcut::activated, this, &MainWindow::updateStudyView);
+
 }
 
 void MainWindow::setupMenu() {
@@ -60,6 +72,7 @@ void MainWindow::setupMenu() {
 
     QAction* importAction = fileMenu->addAction("&Import Deck (JSON)...");
     importAction->setShortcut(QKeySequence::Open);
+
     connect(importAction, &QAction::triggered, this, &MainWindow::onImportDeck);
 
     QAction* exportAction = fileMenu->addAction("&Export Deck (JSON)...");
@@ -70,6 +83,9 @@ void MainWindow::setupMenu() {
     exportPDF->setShortcut(QKeySequence::Print);
     connect(exportPDF, &QAction::triggered, this, &MainWindow::onExportPDF);
 
+    QAction* toggleCmdModeAction = new QAction();
+    toggleCmdModeAction->setShortcut(QKeySequence(Qt::Key_Escape));
+    connect(toggleCmdModeAction, &QAction::triggered, this, &vimBinds::toggleCmdMode);
 
     m_aboutWindow.resize(320, 240);
     m_aboutWindow.setWindowTitle(
@@ -82,8 +98,10 @@ void MainWindow::setupMenu() {
 
     QAction* exitAction = fileMenu->addAction("E&xit");
     exitAction->setShortcut(QKeySequence::Quit);
-    connect(exitAction, &QAction::triggered, this, &QWidget::close);
+
+    connect(exitAction, &QAction::triggered, this, &QApplication::closeAllWindows);
 }
+
 
 void MainWindow::setupAbout() {
     QVBoxLayout *aboutLayout = new QVBoxLayout(&m_aboutWindow);
@@ -97,6 +115,10 @@ void MainWindow::setupAbout() {
     aboutLayout->addWidget(authorLabel);
     aboutLayout->addWidget(image);
 }
+
+
+
+
 void MainWindow::setupUi() {
     m_tabWidget = new QTabWidget(this);
     setCentralWidget(m_tabWidget);
@@ -121,6 +143,7 @@ void MainWindow::setupUi() {
     // Add Card button
     QPushButton* addCardBtn = new QPushButton("➕ Add Flashcard");
     addCardBtn->setStyleSheet("font-weight: bold; padding: 6px;");
+    addCardBtn->setDefault(true); //enter button can activate it now.
     connect(addCardBtn, &QPushButton::clicked, this, &MainWindow::onAddCardClicked);
     manageLayout->addWidget(addCardBtn);
 
@@ -131,6 +154,7 @@ void MainWindow::setupUi() {
 
     m_cardListWidget = new QListWidget();
     manageLayout->addWidget(m_cardListWidget);
+    m_cardListWidget->installEventFilter(this);
 
     // Delete Card button and Deck count
     QHBoxLayout* listActionLayout = new QHBoxLayout();
@@ -393,7 +417,6 @@ void MainWindow::onExportDeck() {
 
 
 void MainWindow::onExportPDF() {
-    //TODO actually export the entire json to pdf not just the first question
     if (m_deck.count() == 0) {
         QMessageBox::warning(this, "Export PDF", "The deck is currently empty. Add cards before exporting.");
         return;

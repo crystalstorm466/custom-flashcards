@@ -4,8 +4,9 @@
 #include <QLabel>
 #include <QMouseEvent>
 #include <QRadioButton>
+#include <qevent.h>
 #include "Deck.h"
-
+#include "vimBinds.h"
 class QLineEdit;
 class QTextEdit;
 class QListWidget;
@@ -14,6 +15,8 @@ class QPushButton;
 class QTabWidget;
 class QCheckBox;
 class QPixmap;
+class QShortcut;
+class QKeyCombination;
 class ClickableLabel : public QLabel {
     Q_OBJECT
 public:
@@ -61,7 +64,6 @@ private:
     void setupMenu();
     void refreshCardList();
     void updateStudyView();
-
     // Application Data
     Deck m_deck;
     Deck m_backupDeck;
@@ -79,7 +81,6 @@ private:
     QPushButton* m_flipButton = nullptr;
     QPushButton* m_prevButton = nullptr;
     QPushButton* m_nextButton = nullptr;
-
     // Study state
     int m_currentStudyIndex = 0;
     bool m_isShowingAnswer = false;
