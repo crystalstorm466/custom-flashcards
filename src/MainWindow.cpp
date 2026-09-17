@@ -23,9 +23,11 @@
 #include <cctype>
 #include <cstdio>
 #include <fstream>
+#include <qaction.h>
 #include <qcoreevent.h>
 #include <qevent.h>
 #include <qkeysequence.h>
+#include <qlistwidget.h>
 #include <qnamespace.h>
 #include <qshortcut.h>
 #include <random>
@@ -34,10 +36,11 @@
 #include <QPixmap>
 #include <QShortcut>
 #include <QKeyCombination>
-
+#include <QKeyEvent>
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_deck("Starter Deck")
+    , m_vimBinds(this)
 {
     //TODO Going to implement VIM keybinds
     setWindowTitle("Flashcard Study App");
@@ -46,7 +49,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     setupMenu();
     setupAbout();
-    vimBinds::setupVim();
+    m_vimBinds.setupVim();
     // Starter seed cards for demonstration
     m_deck.addCard(Flashcard("Who is Charlie Kirk?",
                              "He saved America"));
@@ -85,7 +88,12 @@ void MainWindow::setupMenu() {
 
     QAction* toggleCmdModeAction = new QAction();
     toggleCmdModeAction->setShortcut(QKeySequence(Qt::Key_Escape));
-    connect(toggleCmdModeAction, &QAction::triggered, this, &vimBinds::toggleCmdMode);
+    // connect(toggleCmdModeAction, &QAction::triggered, this, m_vimBinds.toggleCmdMode());
+
+    connect(toggleCmdModeAction, &QAction::triggered,
+            this, [this]() {
+                m_vimBinds.toggleCmdMode();
+            });
 
     m_aboutWindow.resize(320, 240);
     m_aboutWindow.setWindowTitle(
@@ -102,6 +110,52 @@ void MainWindow::setupMenu() {
     connect(exitAction, &QAction::triggered, this, &QApplication::closeAllWindows);
 }
 
+bool MainWindow::eventFilter(QObject *watched, QEvent *event) {
+    if (event->type() == QEvent::KeyPress) {
+        QListWidget *listWidget = qobject_cast<QListWidget*>(watched);
+
+        if (listWidget) {
+            QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+            int row = listWidget->currentRow();
+
+            if (keyEvent->key() == Qt::Key_J) {
+                if (row + 1 < listWidget->count()) {
+                    listWidget->setCurrentRow(row + 1);
+                }
+                return true;
+            }
+            else if (keyEvent->key() == Qt::Key_K) { // INSIDE if (listWidget)
+                if (row - 1 >= 0) {
+                    listWidget->setCurrentRow(row - 1);
+                }
+                return true;
+            }
+        }
+    }
+    return QMainWindow::eventFilter(watched, event);
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *event) {
+    // TODO: implement state checking for normal mode and command mode
+    if (m_vimBinds.getMode()) {
+        if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+            m_vimBinds.processVimCmd(*m_commandBuffer);
+            m_vimBinds.clearBuffer();
+            m_commandBuffer->clear();
+        } else if (event->key() == Qt::Key_Backspace) {
+            if (!m_commandBuffer->isEmpty()) {
+                m_commandBuffer->chop(1); //handle backspace
+                m_vimBinds.chopBuffer(1);
+            }
+        } else if (!event->text().isEmpty()) {
+            m_vimBinds.writeBuffer(event->text());
+            m_commandBuffer->append(event->text());
+            //m_commandBuffer->append(event->text());
+        }
+        return;
+    }
+    QMainWindow::keyPressEvent(event); //pass unhandled key presses back to QMainWindow
+}
 
 void MainWindow::setupAbout() {
     QVBoxLayout *aboutLayout = new QVBoxLayout(&m_aboutWindow);
@@ -118,6 +172,9 @@ void MainWindow::setupAbout() {
 
 
 
+void MainWindow::setupVimList() {
+    m_cardListWidget->installEventFilter(this);
+}
 
 void MainWindow::setupUi() {
     m_tabWidget = new QTabWidget(this);

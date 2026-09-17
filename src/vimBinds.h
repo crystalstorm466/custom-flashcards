@@ -6,7 +6,6 @@
 #include <QRadioButton>
 #include <qevent.h>
 #include "Deck.h"
-#include "MainWindow.h"
 
 class QLineEdit;
 class QTextEdit;
@@ -18,27 +17,32 @@ class QCheckBox;
 class QPixmap;
 class QShortcut;
 class QKeyCombination;
-
-class vimBinds : public vimBinds {
-    Q_OBJECT
+class MainWindow;
+class vimBinds {
 
 public:
+    explicit vimBinds(MainWindow* window);
 
-private slots:
-protected:
-    void keyPressEvent(QKeyEvent *event) override;
-    bool eventFilter(QObject *watched, QEvent *event) override;
-
-private:
     void setupVim();
-    void processVimCmd(const QString &cmd);
     void setupVimList();
     void toggleCmdMode();
+    bool getMode();
+    QString* getBuffer();
+    void writeBuffer(const QString& cmd);
+    void clearBuffer();
+    void chopBuffer(int x);
+    void saveQuit();
+    void processVimCmd(const QString &cmd);
     // Application Data
     QAction* toggleCmdModeAction = nullptr;
     QShortcut* insertMode = nullptr;
-    QString* m_commandBuffer = nullptr;
     // Study state
-    bool inCmdMode = true;
+private slots:
+protected:
+
+private:
+    MainWindow* m_window;
+    bool v_inCmdMode = true;
+    QString* v_commandBuffer = nullptr;
 
 };

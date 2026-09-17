@@ -17,6 +17,7 @@ class QCheckBox;
 class QPixmap;
 class QShortcut;
 class QKeyCombination;
+class QKeyEvent;
 class ClickableLabel : public QLabel {
     Q_OBJECT
 public:
@@ -30,6 +31,7 @@ protected:
         emit clicked();
         QLabel::mousePressEvent(event);
     }
+
 };
 
 class MainWindow : public QMainWindow {
@@ -39,6 +41,11 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override = default;
     bool shuffleEnabled;
+// Import / Export Slots
+    void onImportDeck();
+    void onExportDeck();
+    void onExportPDF();
+    void onNewDeck();
 
 private slots:
     // Card Management Slots
@@ -46,11 +53,6 @@ private slots:
     void onDeleteCardClicked();
     void onCardSelected(int currentRow);
 
-    // Import / Export Slots
-    void onImportDeck();
-    void onExportDeck();
-    void onExportPDF();
-    void onNewDeck();
 
     // Study Mode Slots
     void onFlipCardClicked();
@@ -58,6 +60,10 @@ private slots:
     void onPrevCardClicked();
     void onShuffle();
     void setupAbout();
+    void setupVimList();
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
     void setupUi();
@@ -81,9 +87,12 @@ private:
     QPushButton* m_flipButton = nullptr;
     QPushButton* m_prevButton = nullptr;
     QPushButton* m_nextButton = nullptr;
+    QString* m_commandBuffer;
     // Study state
     int m_currentStudyIndex = 0;
     bool m_isShowingAnswer = false;
     bool shuffleYes = false;
+
+    vimBinds m_vimBinds;
 
 };

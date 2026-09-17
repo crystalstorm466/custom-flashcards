@@ -2,27 +2,31 @@
 #include "MainWindow.h"
 #include "Deck.h"
 
+
+vimBinds::vimBinds(MainWindow* window) : m_window(window) {}
+
+
 void vimBinds::toggleCmdMode() {
-    if (&inCmdMode) { inCmdMode = false; } else { inCmdMode = true; }
-    qDebug() << "cmd status: " << inCmdMode;
+    if (&v_inCmdMode) { v_inCmdMode = false; } else { v_inCmdMode = true; }
+    qDebug() << "cmd status: " << v_inCmdMode;
 }
 
-void vimBinds::keyPressEvent(QKeyEvent *event) {
-    // TODO: implement state checking for normal mode and command mode
-    if (inCmdMode) {
-        if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
-            processVimCmd(*m_commandBuffer);
-            m_commandBuffer->clear();
-        } else if (event->key() == Qt::Key_Backspace) {
-            if (!m_commandBuffer->isEmpty()) {
-                m_commandBuffer->chop(1); //handle backspace
-            }
-        } else if (!event->text().isEmpty()) {
-            m_commandBuffer->append(event->text());
-        }
-        return;
-    }
-    QMainWindow::keyPressEvent(event); //pass unhandled key presses back to QMainWindow
+bool vimBinds::getMode() {
+    return v_inCmdMode;
+}
+QString* vimBinds::getBuffer() {
+    return v_commandBuffer;
+}
+
+void vimBinds::writeBuffer(const QString& buf) {
+    v_commandBuffer->append(buf);
+}
+void vimBinds::clearBuffer() {
+    v_commandBuffer->clear();
+}
+
+void vimBinds::chopBuffer(int x) {
+    v_commandBuffer->chop(x);
 }
 
 void vimBinds::processVimCmd(const QString &cmd) {
@@ -39,16 +43,16 @@ void vimBinds::processVimCmd(const QString &cmd) {
     //C++ doesnt support strings in switch statments :(
     if (cmd == ":w") {
         qDebug() << "write command called";
-        onExportDeck();
+        m_window->onExportDeck();
     } else if (cmd == ":o") {
         qDebug() << "open command called";
-        onImportDeck();
+        m_window->onImportDeck();
     }  else if (cmd == ":q") {
         qDebug() << "quit command called";
-        close();
+        m_window->close();
     } else if (cmd == ":wq") {
-        onExportDeck();
-        close();
+        m_window->onExportDeck();
+        m_window->close();
     }
     // switch(&cmd) {
     //     case ":w":
@@ -63,8 +67,8 @@ void vimBinds::processVimCmd(const QString &cmd) {
     // }
 }
 void vimBinds::saveQuit() {
-    onExportDeck();
-    this->close();
+    m_window->onExportDeck();
+    m_window->close();
     qDebug() << "savequit() called";
     QCoreApplication::quit();
 }
@@ -74,9 +78,6 @@ void vimBinds::setupVim() {
 }
 
 
-void vimBinds::setupVimList() {
-    m_cardListWidget->installEventFilter(this);
-}
 
 
 
