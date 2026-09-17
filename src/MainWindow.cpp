@@ -112,10 +112,14 @@ void MainWindow::setupMenu() {
 
 bool MainWindow::eventFilter(QObject *watched, QEvent *event) {
     if (event->type() == QEvent::KeyPress) {
-        QListWidget *listWidget = qobject_cast<QListWidget*>(watched);
+        QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
 
+        QListWidget *listWidget = qobject_cast<QListWidget*>(watched);
+         if (keyEvent->key() == Qt::Key_Left && Qt::Key_Right) {
+
+            return true;
+        }
         if (listWidget) {
-            QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
             int row = listWidget->currentRow();
 
             if (keyEvent->key() == Qt::Key_J) {
@@ -294,8 +298,12 @@ void MainWindow::setupUi() {
     // Flip Card Button
     m_flipButton = new QPushButton("🔄 Flip Card");
     m_flipButton->setStyleSheet("font-size: 14px; padding: 8px; font-weight: bold;");
-
+    for (auto key : {Qt::Key_Up, Qt::Key_Down, Qt::Key_Space} ) {
+        QShortcut* shortcut = new QShortcut(QKeySequence(key), m_flipButton);
+        connect(shortcut, &QShortcut::activated, m_flipButton, &QPushButton::click);
+    }
     connect(m_flipButton, &QPushButton::clicked, this, &MainWindow::onFlipCardClicked);
+
     connect(m_studyCardDisplay, &ClickableLabel::clicked, this, &MainWindow::onFlipCardClicked);
     connect(m_shuffleCards, &QCheckBox::toggled, this, &MainWindow::onShuffle);
 
@@ -308,6 +316,8 @@ void MainWindow::setupUi() {
     QHBoxLayout* navLayout = new QHBoxLayout();
     m_prevButton = new QPushButton("⬅️ Previous");
     m_nextButton = new QPushButton("Next ➡️");
+    m_prevButton->setShortcut(Qt::Key_Left);
+    m_nextButton->setShortcut(Qt::Key_Right);
     connect(m_prevButton, &QPushButton::clicked, this, &MainWindow::onPrevCardClicked);
     connect(m_nextButton, &QPushButton::clicked, this, &MainWindow::onNextCardClicked);
     navLayout->addWidget(m_prevButton);
