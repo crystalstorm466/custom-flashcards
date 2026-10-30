@@ -11,6 +11,11 @@
 #include <QDebug>
 #include <qnamespace.h>
 
+
+//TODO going to implement / searching now
+
+
+
 vimBinds::vimBinds(MainWindow* window)
     : m_window(window)
     , m_mode(Mode::Normal)

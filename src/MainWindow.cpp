@@ -42,7 +42,6 @@ MainWindow::MainWindow(QWidget *parent)
     , m_deck("Starter Deck")
     , m_vimBinds(this)
 {
-    //TODO Going to implement VIM keybinds
     setWindowTitle("Flashcard Study App");
     resize(700, 550);
     setupUi();
