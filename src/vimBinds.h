@@ -1,48 +1,39 @@
 #pragma once
 
-#include <QMainWindow>
-#include <QLabel>
-#include <QMouseEvent>
-#include <QRadioButton>
-#include <qevent.h>
-#include "Deck.h"
+#include <QString>
+#include <QObject>
 
-class QLineEdit;
-class QTextEdit;
-class QListWidget;
-class QLabel;
-class QPushButton;
-class QTabWidget;
-class QCheckBox;
-class QPixmap;
-class QShortcut;
-class QKeyCombination;
 class MainWindow;
-class vimBinds {
+class QKeyEvent;
 
+class vimBinds {
 public:
+    enum class Mode {
+        Normal,
+        Insert,
+        Command
+    };
+
     explicit vimBinds(MainWindow* window);
 
     void setupVim();
-    void setupVimList();
+    bool handleKeyPress(QObject* watched, QKeyEvent* event);
+
+    Mode mode() const { return m_mode; }
+    void setMode(Mode mode);
+    bool getMode() const { return m_mode == Mode::Command; }
+
+    void enterNormalMode();
+    void enterInsertMode(bool clearInputs = false);
+    void enterCommandMode();
     void toggleCmdMode();
-    bool getMode();
-    QString* getBuffer();
-    void writeBuffer(const QString& cmd);
-    void clearBuffer();
-    void chopBuffer(int x);
-    void saveQuit();
-    void processVimCmd(const QString &cmd);
-    // Application Data
-    QAction* toggleCmdModeAction = nullptr;
-    QShortcut* insertMode = nullptr;
-    // Study state
-private slots:
-protected:
+
+    void processVimCmd(const QString& cmd);
 
 private:
     MainWindow* m_window;
-    bool v_inCmdMode = true;
-    QString* v_commandBuffer = nullptr;
-
+    Mode m_mode = Mode::Normal;
+    QString m_commandBuffer;
+    bool m_pendingG = false; // For 'gg'
+    bool m_pendingD = false; // For 'dd'
 };

@@ -49,17 +49,17 @@ MainWindow::MainWindow(QWidget *parent)
 
     setupMenu();
     setupAbout();
-    m_vimBinds.setupVim();
     // Starter seed cards for demonstration
     m_deck.addCard(Flashcard("Who is Charlie Kirk?",
                              "He saved America"));
     m_deck.addCard(Flashcard("What is Arch Linux?",
                              "A Linux distro."));
 
-    Deck m_backupDeck = m_deck;
+    m_backupDeck = m_deck;
 
     refreshCardList();
     updateStudyView();
+    m_vimBinds.setupVim();
     statusBar()->showMessage("Welcome! You can add cards, import/export decks, or switch to Study mode.", 5000);
     QShortcut* insertMode = new QShortcut(QKeySequence(Qt::Key_Insert), this);
     connect(insertMode, &QShortcut::activated, this, &MainWindow::updateStudyView);
@@ -113,52 +113,18 @@ void MainWindow::setupMenu() {
 bool MainWindow::eventFilter(QObject *watched, QEvent *event) {
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
-
-        QListWidget *listWidget = qobject_cast<QListWidget*>(watched);
-         if (keyEvent->key() == Qt::Key_Left && Qt::Key_Right) {
-
+        if (m_vimBinds.handleKeyPress(watched, keyEvent)) {
             return true;
-        }
-        if (listWidget) {
-            int row = listWidget->currentRow();
-
-            if (keyEvent->key() == Qt::Key_J) {
-                if (row + 1 < listWidget->count()) {
-                    listWidget->setCurrentRow(row + 1);
-                }
-                return true;
-            }
-            else if (keyEvent->key() == Qt::Key_K) { // INSIDE if (listWidget)
-                if (row - 1 >= 0) {
-                    listWidget->setCurrentRow(row - 1);
-                }
-                return true;
-            }
         }
     }
     return QMainWindow::eventFilter(watched, event);
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event) {
-    // TODO: implement state checking for normal mode and command mode
-    if (m_vimBinds.getMode()) {
-        if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
-            m_vimBinds.processVimCmd(*m_commandBuffer);
-            m_vimBinds.clearBuffer();
-            m_commandBuffer->clear();
-        } else if (event->key() == Qt::Key_Backspace) {
-            if (!m_commandBuffer->isEmpty()) {
-                m_commandBuffer->chop(1); //handle backspace
-                m_vimBinds.chopBuffer(1);
-            }
-        } else if (!event->text().isEmpty()) {
-            m_vimBinds.writeBuffer(event->text());
-            m_commandBuffer->append(event->text());
-            //m_commandBuffer->append(event->text());
-        }
+    if (m_vimBinds.handleKeyPress(this, event)) {
         return;
     }
-    QMainWindow::keyPressEvent(event); //pass unhandled key presses back to QMainWindow
+    QMainWindow::keyPressEvent(event);
 }
 
 void MainWindow::setupAbout() {
@@ -335,30 +301,44 @@ void MainWindow::setupUi() {
     });
 }
 
-void MainWindow::onShuffle() {
+void MainWindow::toggleShuffle() {
+    m_shuffleCards->toggle();
+}
 
-    if (m_shuffleCards->checkState() == Qt::Unchecked) {
-        m_deck = m_backupDeck;
+void MainWindow::onShuffle(bool checked) {
+    if (checked) {
+        if (m_deck.count() <= 1) {
+            statusBar()->showMessage("Add at least 2 cards to shuffle.", 3000);
+            QSignalBlocker blocker(m_shuffleCards);
+            m_shuffleCards->setChecked(false);
+            return;
+        }
+
+        m_backupDeck = m_deck;
+
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::shuffle(m_deck.begin(), m_deck.end(), gen);
+
+        m_currentStudyIndex = 0;
+        m_isShowingAnswer = false;
+        updateStudyView();
+        statusBar()->showMessage("Shuffled!", 3000);
+    } else {
+        if (m_backupDeck.count() == m_deck.count()) {
+            m_deck = m_backupDeck;
+        } else {
+            std::sort(m_deck.begin(), m_deck.end(), [](const Flashcard& a, const Flashcard& b) {
+                return a.getIndex() < b.getIndex();
+            });
+        }
+
         refreshCardList();
         m_currentStudyIndex = 0;
         m_isShowingAnswer = false;
         updateStudyView();
-        statusBar()->showMessage("Restored to default!", 4000);
-        m_shuffleCards->setCheckState(Qt::Unchecked);
-        return;
+        statusBar()->showMessage("Restored to default order!", 3000);
     }
-    if (m_deck.count() <= 1) {
-        statusBar()->showMessage("Add at least 2 cards to shuffle.", 3000);
-        return;
-    }
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::shuffle(m_deck.begin(), m_deck.end(), gen);
-
-    m_currentStudyIndex = 0;
-    m_isShowingAnswer = false;
-    updateStudyView();
-    statusBar()->showMessage("Shuffled!", 4000);
 }
 void MainWindow::refreshCardList() {
     m_cardListWidget->clear();
@@ -407,6 +387,10 @@ void MainWindow::onDeleteCardClicked() {
     m_backupDeck = m_deck;
 
     refreshCardList();
+    if (m_deck.count() > 0) {
+        int nextRow = std::min(row, m_deck.count() - 1);
+        m_cardListWidget->setCurrentRow(nextRow);
+    }
     updateStudyView();
     statusBar()->showMessage("Card removed.", 3000);
 }

@@ -36,6 +36,7 @@ protected:
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
+    friend class vimBinds;
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
@@ -58,7 +59,8 @@ private slots:
     void onFlipCardClicked();
     void onNextCardClicked();
     void onPrevCardClicked();
-    void onShuffle();
+    void onShuffle(bool checked = true);
+    void toggleShuffle();
     void setupAbout();
     void setupVimList();
 protected:

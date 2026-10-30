@@ -2,82 +2,346 @@
 #include "MainWindow.h"
 #include "Deck.h"
 
+#include <QApplication>
+#include <QKeyEvent>
+#include <QStatusBar>
+#include <QTabWidget>
+#include <QListWidget>
+#include <QLineEdit>
+#include <QDebug>
+#include <qnamespace.h>
 
-vimBinds::vimBinds(MainWindow* window) : m_window(window) {}
+vimBinds::vimBinds(MainWindow* window)
+    : m_window(window)
+    , m_mode(Mode::Normal)
+{
+}
 
+void vimBinds::setMode(Mode mode) {
+    m_mode = mode;
+}
+
+void vimBinds::setupVim() {
+    if (m_window) {
+        qApp->installEventFilter(m_window);
+        enterNormalMode();
+    }
+}
+
+void vimBinds::enterNormalMode() {
+    m_mode = Mode::Normal;
+    m_pendingG = false;
+    m_pendingD = false;
+    m_commandBuffer.clear();
+
+    if (!m_window) return;
+
+    if (m_window->m_frontInput) m_window->m_frontInput->clearFocus();
+    if (m_window->m_backInput)  m_window->m_backInput->clearFocus();
+
+    if (m_window->m_tabWidget && m_window->m_tabWidget->currentIndex() == 0) {
+        if (m_window->m_cardListWidget) {
+            m_window->m_cardListWidget->setFocus();
+            if (m_window->m_cardListWidget->currentRow() < 0 && m_window->m_cardListWidget->count() > 0) {
+                m_window->m_cardListWidget->setCurrentRow(0);
+            }
+        }
+    } else {
+        m_window->setFocus();
+    }
+
+    if (m_window->statusBar()) {
+        m_window->statusBar()->showMessage("-- NORMAL --", 2000);
+    }
+}
+
+void vimBinds::enterInsertMode(bool clearInputs) {
+    m_mode = Mode::Insert;
+    m_pendingG = false;
+    m_pendingD = false;
+    m_commandBuffer.clear();
+
+    if (!m_window) return;
+
+    // Switch to editor tab (Tab 0: Manage Cards)
+    if (m_window->m_tabWidget) {
+        m_window->m_tabWidget->setCurrentIndex(0);
+    }
+
+    if (clearInputs) {
+        if (m_window->m_frontInput) m_window->m_frontInput->clear();
+        if (m_window->m_backInput)  m_window->m_backInput->clear();
+    }
+
+    if (m_window->m_frontInput) {
+        m_window->m_frontInput->setFocus();
+    }
+
+    if (m_window->statusBar()) {
+        m_window->statusBar()->showMessage("-- INSERT --");
+    }
+}
+
+void vimBinds::enterCommandMode() {
+    m_mode = Mode::Command;
+    m_pendingG = false;
+    m_pendingD = false;
+    m_commandBuffer.clear();
+
+    if (m_window && m_window->statusBar()) {
+        m_window->statusBar()->showMessage(":");
+    }
+}
 
 void vimBinds::toggleCmdMode() {
-    if (&v_inCmdMode) { v_inCmdMode = false; } else { v_inCmdMode = true; }
-    qDebug() << "cmd status: " << v_inCmdMode;
-}
-
-bool vimBinds::getMode() {
-    return v_inCmdMode;
-}
-QString* vimBinds::getBuffer() {
-    return v_commandBuffer;
-}
-
-void vimBinds::writeBuffer(const QString& buf) {
-    v_commandBuffer->append(buf);
-}
-void vimBinds::clearBuffer() {
-    v_commandBuffer->clear();
-}
-
-void vimBinds::chopBuffer(int x) {
-    v_commandBuffer->chop(x);
-}
-
-void vimBinds::processVimCmd(const QString &cmd) {
-    //insert mode -> card builder: i mode
-    //Escape - return to normal mode
-    //delete a card under cursor: x
-    //undo: u (require saving deleted cards - depends)
-    //save: w
-    //quit: q
-    //quit w/o saving: q!
-    //Command mode which changes mode and imports and export
-
-
-    //C++ doesnt support strings in switch statments :(
-    if (cmd == ":w") {
-        qDebug() << "write command called";
-        m_window->onExportDeck();
-    } else if (cmd == ":o") {
-        qDebug() << "open command called";
-        m_window->onImportDeck();
-    }  else if (cmd == ":q") {
-        qDebug() << "quit command called";
-        m_window->close();
-    } else if (cmd == ":wq") {
-        m_window->onExportDeck();
-        m_window->close();
+    if (m_mode == Mode::Command) {
+        enterNormalMode();
+    } else {
+        enterCommandMode();
     }
-    // switch(&cmd) {
-    //     case ":w":
-    //         onExportDeck();
-    //         break;
-    //     case ":wq":
-    //         onExportDeck();
-    //     case ":q":
-    //         close();
-    //         break;
-    //
-    // }
-}
-void vimBinds::saveQuit() {
-    m_window->onExportDeck();
-    m_window->close();
-    qDebug() << "savequit() called";
-    QCoreApplication::quit();
-}
-void vimBinds::setupVim() {
-
-    qDebug() << "insert mode pressed";
 }
 
+void vimBinds::processVimCmd(const QString& cmd) {
+    if (!m_window) return;
 
+    QString trimmed = cmd.trimmed();
+    if (trimmed == ":w") {
+        m_window->onExportDeck();
+    } else if (trimmed == ":o") {
+        m_window->onImportDeck();
+    } else if (trimmed == ":q") {
+        m_window->close();
+    } else if (trimmed == ":wq" || trimmed == ":x") {
+        m_window->onExportDeck();
+        m_window->close();
+    } else if (trimmed == ":1" || trimmed == ":manage" || trimmed == ":edit") {
+        if (m_window->m_tabWidget) m_window->m_tabWidget->setCurrentIndex(0);
+    } else if (trimmed == ":2" || trimmed == ":study") {
+        if (m_window->m_tabWidget) m_window->m_tabWidget->setCurrentIndex(1);
+    } else if (trimmed == ":shuf" || trimmed == ":shuffle") {
+        m_window->toggleShuffle();
+    } else {
+        if (m_window->statusBar()) {
+            m_window->statusBar()->showMessage(QString("Unknown command: %1").arg(trimmed), 3000);
+        }
+    }
+}
 
+bool vimBinds::handleKeyPress(QObject* watched, QKeyEvent* event) {
+    if (!m_window) return false;
 
+    int key = event->key();
+    QString text = event->text();
 
+    // ==========================================
+    // 1. INSERT MODE HANDLING
+    // ==========================================
+    if (m_mode == Mode::Insert) {
+        if (key == Qt::Key_Escape) {
+            enterNormalMode();
+            return true;
+        }
+
+        bool inFront = (watched == m_window->m_frontInput);
+        bool inBack  = (watched == m_window->m_backInput);
+
+        if (inFront || inBack) {
+            if (key == Qt::Key_Return || key == Qt::Key_Enter) {
+                if (inFront) {
+                    if (m_window->m_backInput) {
+                        m_window->m_backInput->setFocus();
+                    }
+                    return true;
+                } else if (inBack) {
+                    m_window->onAddCardClicked();
+                    if (m_window->m_frontInput) {
+                        m_window->m_frontInput->setFocus();
+                    }
+                    return true;
+                }
+            }
+            // Allow normal typing inside input fields
+            return false;
+        }
+
+        // If focus shifted away from inputs, switch back to normal
+        enterNormalMode();
+    }
+
+    // ==========================================
+    // 2. COMMAND MODE HANDLING (Started with ':')
+    // ==========================================
+    if (m_mode == Mode::Command) {
+        if (key == Qt::Key_Escape) {
+            enterNormalMode();
+            return true;
+        }
+        if (key == Qt::Key_Return || key == Qt::Key_Enter) {
+            processVimCmd(":" + m_commandBuffer);
+            enterNormalMode();
+            return true;
+        }
+        if (key == Qt::Key_Backspace) {
+            if (m_commandBuffer.isEmpty()) {
+                enterNormalMode();
+            } else {
+                m_commandBuffer.chop(1);
+                if (m_window->statusBar()) {
+                    m_window->statusBar()->showMessage(":" + m_commandBuffer);
+                }
+            }
+            return true;
+        }
+        if (!text.isEmpty()) {
+            m_commandBuffer.append(text);
+            if (m_window->statusBar()) {
+                m_window->statusBar()->showMessage(":" + m_commandBuffer);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    // ==========================================
+    // 3. NORMAL MODE HANDLING
+    // ==========================================
+    if (key == Qt::Key_Escape) {
+        enterNormalMode();
+        return true;
+    }
+
+    // If an input field receives typing while in Normal mode, auto-switch to Insert
+    if (watched == m_window->m_frontInput || watched == m_window->m_backInput) {
+        m_mode = Mode::Insert;
+        if (m_window->statusBar()) {
+            m_window->statusBar()->showMessage("-- INSERT --");
+        }
+        return false;
+    }
+
+    int currentTab = m_window->m_tabWidget ? m_window->m_tabWidget->currentIndex() : 0;
+
+    // --- Tab Switching: 'gt' or Tab ---
+    if ((key == Qt::Key_Tab && event->modifiers() == Qt::NoModifier) ||
+        (m_pendingG && (key == Qt::Key_T || text == "t"))) {
+        m_pendingG = false;
+        if (m_window->m_tabWidget) {
+            int nextTab = (currentTab + 1) % m_window->m_tabWidget->count();
+            m_window->m_tabWidget->setCurrentIndex(nextTab);
+            if (nextTab == 0 && m_window->m_cardListWidget) {
+                m_window->m_cardListWidget->setFocus();
+            }
+        }
+        return true;
+    }
+
+    // --- Command Mode: ':' ---
+    if (text == ":") {
+        enterCommandMode();
+        return true;
+    }
+
+    // --- Insert Mode: 'i', 'a', 'o' ---
+    if (key == Qt::Key_I || text == "i" || text == "a") {
+        enterInsertMode(false);
+        return true;
+    }
+    if (key == Qt::Key_O || text == "o") {
+        enterInsertMode(true); // 'o' opens a new blank card
+        return true;
+    }
+
+    // --- Deleting: 'x' or 'dd' ---
+    if (text == "x") {
+        if (currentTab == 0 && m_window->m_cardListWidget) {
+            m_window->onDeleteCardClicked();
+        }
+        return true;
+    }
+    if (text == "d") {
+        if (m_pendingD) {
+            m_pendingD = false;
+            if (currentTab == 0 && m_window->m_cardListWidget) {
+                m_window->onDeleteCardClicked();
+            }
+            return true;
+        } else {
+            m_pendingD = true;
+            return true;
+        }
+    }
+    m_pendingD = false;
+
+    // --- Top/Bottom Jump: 'gg' / 'G' ---
+    if (text == "G") {
+        if (currentTab == 0 && m_window->m_cardListWidget && m_window->m_cardListWidget->count() > 0) {
+            m_window->m_cardListWidget->setCurrentRow(m_window->m_cardListWidget->count() - 1);
+        }
+        return true;
+    }
+    if (text == "g") {
+        if (m_pendingG) {
+            m_pendingG = false;
+            if (currentTab == 0 && m_window->m_cardListWidget && m_window->m_cardListWidget->count() > 0) {
+                m_window->m_cardListWidget->setCurrentRow(0);
+            }
+            return true;
+        } else {
+            m_pendingG = true;
+            return true;
+        }
+    }
+    m_pendingG = false;
+
+    // --- Navigation: 'j' (Down / Next) ---
+    if (key == Qt::Key_J || text == "j" || key == Qt::Key_Down) {
+        if (currentTab == 0 && m_window->m_cardListWidget) {
+            int row = m_window->m_cardListWidget->currentRow();
+            if (row < 0 && m_window->m_cardListWidget->count() > 0) {
+                m_window->m_cardListWidget->setCurrentRow(0);
+            } else if (row + 1 < m_window->m_cardListWidget->count()) {
+                m_window->m_cardListWidget->setCurrentRow(row + 1);
+            }
+        } else if (currentTab == 1) {
+            m_window->onNextCardClicked();
+        }
+        return true;
+    }
+
+    // --- Navigation: 'k' (Up / Prev) ---
+    if (key == Qt::Key_K || text == "k" || key == Qt::Key_Up) {
+        if (currentTab == 0 && m_window->m_cardListWidget) {
+            int row = m_window->m_cardListWidget->currentRow();
+            if (row - 1 >= 0) {
+                m_window->m_cardListWidget->setCurrentRow(row - 1);
+            }
+        } else if (currentTab == 1) {
+            m_window->onPrevCardClicked();
+        }
+        return true;
+    }
+
+    // --- Navigation: 'l' (Next in card view) ---
+    if (key == Qt::Key_L || text == "l" || key == Qt::Key_Right) {
+        if (currentTab == 1) {
+            m_window->onNextCardClicked();
+            return true;
+        }
+    }
+
+    // --- Navigation: 'h' (Prev in card view) ---
+    if (key == Qt::Key_H || text == "h" || key == Qt::Key_Left) {
+        if (currentTab == 1) {
+            m_window->onPrevCardClicked();
+            return true;
+        }
+    }
+
+    // --- Flip Card: Space or 'f' or Enter (in Study Mode) ---
+    if (currentTab == 1 && (key == Qt::Key_Space || text == "f" || key == Qt::Key_Return || key == Qt::Key_Enter)) {
+        m_window->onFlipCardClicked();
+        return true;
+    }
+
+    return false;
+}
