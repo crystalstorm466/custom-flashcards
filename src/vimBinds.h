@@ -35,6 +35,8 @@ private:
     MainWindow* m_window;
     Mode m_mode = Mode::Normal;
     QString m_commandBuffer;
+    QString m_searchQuery;
+    void moveToSearchMatch(bool forward);
     char m_promptChar = ':';
     bool m_pendingG = false; // For 'gg'
     bool m_pendingD = false; // For 'dd'

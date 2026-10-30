@@ -138,28 +138,67 @@ void vimBinds::processVimCmd(const QString& cmd) {
         m_window->toggleShuffle();
     } else if (trimmed.startsWith("/")) {
         //TODO: implement searching
-        const QString query = trimmed.mid(1).trimmed(); //cuts off / to get the search trim
-        if (query.isEmpty() || !m_window->m_cardListWidget) {
-            return;
-        }
-
-        if (m_window->m_tabWidget) {
-            m_window->m_tabWidget->setCurrentIndex(0);
-        }
-
-        const auto matches = m_window->m_cardListWidget->findItems(
-            query, Qt::MatchContains | Qt::MatchFixedString
-        );
-            if (!matches.isEmpty()) {
-                m_window->m_cardListWidget->setCurrentItem(matches.first()); //highlight match
-                m_window->statusBar()->showMessage(QString("Found: $1").arg(query), 3000);
-            } else {
-                m_window->statusBar()->showMessage(QString("Pattern not found: $1").arg(query), 3000);
+        m_searchQuery = trimmed.mid(1).trimmed(); //cuts off / to get the search trim
+        if (!m_searchQuery.isEmpty()) {
+            if (m_window->m_tabWidget) {
+                m_window->m_tabWidget->setCurrentIndex(0);
             }
+            moveToSearchMatch(true);
+        // if (query.isEmpty() || !m_window->m_cardListWidget) {
+        //     return;
+        // }
+        //
+        // if (m_window->m_tabWidget) {
+        //     m_window->m_tabWidget->setCurrentIndex(0);
+        // }
+        //
+        // const auto matches = m_window->m_cardListWidget->findItems(
+        //     query, Qt::MatchContains | Qt::MatchFixedString
+        // );
+        //     if (!matches.isEmpty()) {
+        //         m_window->m_cardListWidget->setCurrentItem(matches.first()); //highlight match
+        //         m_window->statusBar()->showMessage(QString("Found: $1").arg(query), 3000);
+        //     } else {
+        //         m_window->statusBar()->showMessage(QString("Pattern not found: $1").arg(query), 3000);
+        //     }
+        }
     } else {
         if (m_window->statusBar()) {
             m_window->statusBar()->showMessage(QString("Unknown command: %1").arg(trimmed), 3000);
         }
+    }
+}
+
+void vimBinds::moveToSearchMatch(bool forward) {
+    auto* list = m_window ? m_window->m_cardListWidget : nullptr;
+    if (!list || m_searchQuery.isEmpty() || list->count() == 0) {
+        return;
+    }
+    const int count = list->count();
+    int row = list->currentRow();
+
+    //start at beginning if nothing is selected
+    if (row < 0 ) {
+        row = forward ? -1 : 0;
+    }
+    const int direction = forward ? 1 : -1;
+
+    //skip current row, wrap around and select next match
+    for (int step = 1; step <= count; ++step) {
+        const int candidate = (row + direction * step + count) % count;
+        auto* item =list->item(candidate);
+
+        if (item && item->text().contains(m_searchQuery, Qt::CaseInsensitive)) {
+            list->setCurrentRow(candidate);
+            return;
+        }
+    }
+
+    if (m_window->statusBar()) {
+        m_window->statusBar()->showMessage(
+            QString("Pattern not found: %1").arg(m_searchQuery), 3000
+        );
+
     }
 }
 
@@ -310,6 +349,15 @@ bool vimBinds::handleKeyPress(QObject* watched, QKeyEvent* event) {
             m_pendingD = true;
             return true;
         }
+    }
+    if (text == "n" && !m_searchQuery.isEmpty()) {
+        moveToSearchMatch(true);
+        return true;
+    }
+
+    if (text == "N" && !m_searchQuery.isEmpty()) {
+        moveToSearchMatch(false);
+        return true;
     }
     m_pendingD = false;
 
