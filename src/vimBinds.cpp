@@ -9,6 +9,7 @@
 #include <QListWidget>
 #include <QLineEdit>
 #include <QDebug>
+#include <qlistwidget.h>
 #include <qnamespace.h>
 
 
@@ -87,17 +88,27 @@ void vimBinds::enterInsertMode(bool clearInputs) {
     }
 }
 
+// void vimBinds::enterCommandMode() {
+//     m_mode = Mode::Command;
+//     m_pendingG = false;
+//     m_pendingD = false;
+//     m_commandBuffer.clear();
+//
+//     if (m_window && m_window->statusBar()) {
+//         m_window->statusBar()->showMessage(":");
+//     }
+// }
 void vimBinds::enterCommandMode() {
+    enterCommandMode(':');
+}
+void vimBinds::enterCommandMode(char prompt) {
     m_mode = Mode::Command;
-    m_pendingG = false;
-    m_pendingD = false;
+    m_promptChar = prompt;
     m_commandBuffer.clear();
-
     if (m_window && m_window->statusBar()) {
-        m_window->statusBar()->showMessage(":");
+        m_window->statusBar()->showMessage(QString(prompt));
     }
 }
-
 void vimBinds::toggleCmdMode() {
     if (m_mode == Mode::Command) {
         enterNormalMode();
@@ -125,6 +136,26 @@ void vimBinds::processVimCmd(const QString& cmd) {
         if (m_window->m_tabWidget) m_window->m_tabWidget->setCurrentIndex(1);
     } else if (trimmed == ":shuf" || trimmed == ":shuffle") {
         m_window->toggleShuffle();
+    } else if (trimmed.startsWith("/")) {
+        //TODO: implement searching
+        const QString query = trimmed.mid(1).trimmed(); //cuts off / to get the search trim
+        if (query.isEmpty() || !m_window->m_cardListWidget) {
+            return;
+        }
+
+        if (m_window->m_tabWidget) {
+            m_window->m_tabWidget->setCurrentIndex(0);
+        }
+
+        const auto matches = m_window->m_cardListWidget->findItems(
+            query, Qt::MatchContains | Qt::MatchFixedString
+        );
+            if (!matches.isEmpty()) {
+                m_window->m_cardListWidget->setCurrentItem(matches.first()); //highlight match
+                m_window->statusBar()->showMessage(QString("Found: $1").arg(query), 3000);
+            } else {
+                m_window->statusBar()->showMessage(QString("Pattern not found: $1").arg(query), 3000);
+            }
     } else {
         if (m_window->statusBar()) {
             m_window->statusBar()->showMessage(QString("Unknown command: %1").arg(trimmed), 3000);
@@ -182,7 +213,7 @@ bool vimBinds::handleKeyPress(QObject* watched, QKeyEvent* event) {
             return true;
         }
         if (key == Qt::Key_Return || key == Qt::Key_Enter) {
-            processVimCmd(":" + m_commandBuffer);
+            processVimCmd(QString(m_promptChar) + m_commandBuffer);
             enterNormalMode();
             return true;
         }
@@ -212,6 +243,11 @@ bool vimBinds::handleKeyPress(QObject* watched, QKeyEvent* event) {
     // ==========================================
     if (key == Qt::Key_Escape) {
         enterNormalMode();
+        return true;
+    }
+
+    if (key == Qt::Key_Slash) {
+        enterCommandMode('/');
         return true;
     }
 
