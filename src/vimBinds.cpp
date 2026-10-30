@@ -137,7 +137,6 @@ void vimBinds::processVimCmd(const QString& cmd) {
     } else if (trimmed == ":shuf" || trimmed == ":shuffle") {
         m_window->toggleShuffle();
     } else if (trimmed.startsWith("/")) {
-        //TODO: implement searching
         m_searchQuery = trimmed.mid(1).trimmed(); //cuts off / to get the search trim
         if (!m_searchQuery.isEmpty()) {
             if (m_window->m_tabWidget) {
