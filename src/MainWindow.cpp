@@ -27,6 +27,7 @@
 #include <qcoreevent.h>
 #include <qevent.h>
 #include <qkeysequence.h>
+#include <qlabel.h>
 #include <qlistwidget.h>
 #include <qnamespace.h>
 #include <qshortcut.h>
@@ -48,6 +49,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     setupMenu();
     setupAbout();
+    setupVimAbout();
+    m_aboutVimWindow.setWindowTitle("Vim Keybinds");
+    m_aboutVimWindow.resize(450, 500);
     // Starter seed cards for demonstration
     m_deck.addCard(Flashcard("Who is Charlie Kirk?",
                              "He saved America"));
@@ -100,7 +104,8 @@ void MainWindow::setupMenu() {
     //QAction* openAbout = fileMenu->addAction("&About Flashcards..");
     QAction* openAbout = menuBar()->addAction("&About Flashcards..");
     connect(openAbout, &QAction::triggered, &m_aboutWindow, &QWidget::show);
-
+    QAction* openVimAbout = menuBar()->addAction("&Vim Keybinds..");
+    connect(openVimAbout, &QAction::triggered, &m_aboutVimWindow, &QWidget::show);
     fileMenu->addSeparator();
 
     QAction* exitAction = fileMenu->addAction("E&xit");
@@ -139,6 +144,57 @@ void MainWindow::setupAbout() {
     aboutLayout->addWidget(image);
 }
 
+void MainWindow::setupVimAbout() {
+    QVBoxLayout *aboutVim = new QVBoxLayout(&m_aboutVimWindow);
+    QLabel *vimLabel = new QLabel("Vim Keybinds.");
+    QLabel *commandLabel = new QLabel("Command mode labels:");
+    QLabel *writeCMDLabel = new QLabel(":w - save current deck to json");
+    QLabel *inputCMDLabel = new QLabel(":o - inport deck from json");
+    QLabel *quit_noSaveCmdLabel = new QLabel(":q! - quit w/o saving");
+    QLabel *quit_SaveCmdLabel = new QLabel(":wq or :x - quit w/ saving");
+    QLabel *manageLabel = new QLabel(":1 or :manage or :edit - opens editor tab");
+    QLabel *studyLabel = new QLabel(":2 or :study - opens study tab");
+    QLabel *shuffleCMDLabel = new QLabel(":shuff or :shuffle - shuffles card deck");
+    QLabel *searchLabel = new QLabel("/ - searches card deck for query");
+
+
+    //Normal mode
+    QLabel *normalMode = new QLabel("Normal Mode commands:");
+    QLabel *tabSwitch = new QLabel("gt or Tab - Switches tab");
+    QLabel *cmdModeLabel = new QLabel(": - enters command mode");
+    QLabel *insertModeLabel = new QLabel("i, a- enters insert mode");
+    QLabel *openBlankCard = new QLabel("o, or O - opens new blank card");
+
+    QLabel *deleteCard = new QLabel("x or dd - Deletes current card selected");
+    QLabel *moveNext = new QLabel("n or N - while searching n moves down the list and N moves up.");
+
+    QLabel *moveUp = new QLabel("j - moves down the card list on edit tab, and k moves up the list");
+
+
+
+    aboutVim->addWidget(vimLabel);
+    aboutVim->addWidget(vimLabel);
+    aboutVim->addWidget(commandLabel);
+    aboutVim->addWidget(writeCMDLabel);
+    aboutVim->addWidget(inputCMDLabel);
+    aboutVim->addWidget(quit_noSaveCmdLabel);
+    aboutVim->addWidget(quit_SaveCmdLabel);
+    aboutVim->addWidget(manageLabel);
+    aboutVim->addWidget(studyLabel);
+    aboutVim->addWidget(shuffleCMDLabel);
+    aboutVim->addWidget(searchLabel);
+    aboutVim->addSpacing(6);
+
+    aboutVim->addWidget(tabSwitch);
+    aboutVim->addWidget(cmdModeLabel);
+    aboutVim->addWidget(insertModeLabel);
+    aboutVim->addWidget(openBlankCard);
+    aboutVim->addSpacing(6);
+
+    aboutVim->addWidget(deleteCard);
+    aboutVim->addWidget(moveNext);
+    aboutVim->addWidget(moveUp);
+}
 
 
 void MainWindow::setupVimList() {

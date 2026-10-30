@@ -125,7 +125,7 @@ void vimBinds::processVimCmd(const QString& cmd) {
         m_window->onExportDeck();
     } else if (trimmed == ":o") {
         m_window->onImportDeck();
-    } else if (trimmed == ":q") {
+    } else if (trimmed == ":q!") {
         m_window->close();
     } else if (trimmed == ":wq" || trimmed == ":x") {
         m_window->onExportDeck();
@@ -161,6 +161,11 @@ void vimBinds::processVimCmd(const QString& cmd) {
         //         m_window->statusBar()->showMessage(QString("Pattern not found: $1").arg(query), 3000);
         //     }
         }
+    } else if (trimmed.startsWith(":?")) {
+        m_window->m_aboutVimWindow.show();
+        m_window->m_aboutVimWindow.raise();
+        m_window->m_aboutVimWindow.activateWindow();
+
     } else {
         if (m_window->statusBar()) {
             m_window->statusBar()->showMessage(QString("Unknown command: %1").arg(trimmed), 3000);
@@ -425,11 +430,18 @@ bool vimBinds::handleKeyPress(QObject* watched, QKeyEvent* event) {
         }
     }
 
+    if (key == Qt::Key_Question) {
+        m_window->m_aboutVimWindow.show();
+        m_window->m_aboutVimWindow.raise();
+        m_window->m_aboutVimWindow.activateWindow();
+        return true;
+    }
     // --- Flip Card: Space or 'f' or Enter (in Study Mode) ---
     if (currentTab == 1 && (key == Qt::Key_Space || text == "f" || key == Qt::Key_Return || key == Qt::Key_Enter)) {
         m_window->onFlipCardClicked();
         return true;
     }
+
 
     return false;
 }

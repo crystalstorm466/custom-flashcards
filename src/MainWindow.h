@@ -63,6 +63,7 @@ private slots:
     void toggleShuffle();
     void setupAbout();
     void setupVimList();
+    void setupVimAbout();
 protected:
     void keyPressEvent(QKeyEvent *event) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
@@ -81,6 +82,7 @@ private:
     QListWidget* m_cardListWidget = nullptr;
     QLabel* m_statusLabel = nullptr;
     QWidget m_aboutWindow;
+    QWidget m_aboutVimWindow;
     // UI Widgets - Study Tab
     QTabWidget* m_tabWidget = nullptr;
     ClickableLabel* m_studyCardDisplay = nullptr;
