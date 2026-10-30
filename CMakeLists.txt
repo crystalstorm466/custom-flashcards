@@ -18,6 +18,8 @@ set(SOURCES
     src/Flashcard.cpp
     src/Deck.h
     src/Deck.cpp
+    src/vimBinds.h
+    src/vimBinds.cpp
     src/MainWindow.h
     src/MainWindow.cpp
     resources/resources.qrc

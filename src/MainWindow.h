@@ -4,8 +4,9 @@
 #include <QLabel>
 #include <QMouseEvent>
 #include <QRadioButton>
+#include <qevent.h>
 #include "Deck.h"
-
+#include "vimBinds.h"
 class QLineEdit;
 class QTextEdit;
 class QListWidget;
@@ -14,6 +15,9 @@ class QPushButton;
 class QTabWidget;
 class QCheckBox;
 class QPixmap;
+class QShortcut;
+class QKeyCombination;
+class QKeyEvent;
 class ClickableLabel : public QLabel {
     Q_OBJECT
 public:
@@ -27,15 +31,22 @@ protected:
         emit clicked();
         QLabel::mousePressEvent(event);
     }
+
 };
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
+    friend class vimBinds;
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override = default;
     bool shuffleEnabled;
+// Import / Export Slots
+    void onImportDeck();
+    void onExportDeck();
+    void onExportPDF();
+    void onNewDeck();
 
 private slots:
     // Card Management Slots
@@ -43,25 +54,25 @@ private slots:
     void onDeleteCardClicked();
     void onCardSelected(int currentRow);
 
-    // Import / Export Slots
-    void onImportDeck();
-    void onExportDeck();
-    void onExportPDF();
-    void onNewDeck();
 
     // Study Mode Slots
     void onFlipCardClicked();
     void onNextCardClicked();
     void onPrevCardClicked();
-    void onShuffle();
+    void onShuffle(bool checked = true);
+    void toggleShuffle();
     void setupAbout();
+    void setupVimList();
+    void setupVimAbout();
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
     void setupUi();
     void setupMenu();
     void refreshCardList();
     void updateStudyView();
-
     // Application Data
     Deck m_deck;
     Deck m_backupDeck;
@@ -71,6 +82,7 @@ private:
     QListWidget* m_cardListWidget = nullptr;
     QLabel* m_statusLabel = nullptr;
     QWidget m_aboutWindow;
+    QWidget m_aboutVimWindow;
     // UI Widgets - Study Tab
     QTabWidget* m_tabWidget = nullptr;
     ClickableLabel* m_studyCardDisplay = nullptr;
@@ -79,10 +91,12 @@ private:
     QPushButton* m_flipButton = nullptr;
     QPushButton* m_prevButton = nullptr;
     QPushButton* m_nextButton = nullptr;
-
+    QString* m_commandBuffer;
     // Study state
     int m_currentStudyIndex = 0;
     bool m_isShowingAnswer = false;
     bool shuffleYes = false;
+
+    vimBinds m_vimBinds;
 
 };

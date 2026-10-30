@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 #include "Deck.h"
+#include "vimBinds.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -19,35 +20,53 @@
 #include <QCheckBox>
 #include <QFrame>
 #include <algorithm>
+#include <cctype>
 #include <cstdio>
 #include <fstream>
+#include <qaction.h>
+#include <qcoreevent.h>
+#include <qevent.h>
+#include <qkeysequence.h>
+#include <qlabel.h>
+#include <qlistwidget.h>
+#include <qnamespace.h>
+#include <qshortcut.h>
 #include <random>
 #include <iostream>
 #include <QApplication>
 #include <QPixmap>
-
+#include <QShortcut>
+#include <QKeyCombination>
+#include <QKeyEvent>
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , m_deck("Starter Deck")
+    , m_vimBinds(this)
 {
     setWindowTitle("Flashcard Study App");
     resize(700, 550);
+    setupUi();
 
     setupMenu();
-    setupUi();
     setupAbout();
-
+    setupVimAbout();
+    m_aboutVimWindow.setWindowTitle("Vim Keybinds");
+    m_aboutVimWindow.resize(450, 500);
     // Starter seed cards for demonstration
     m_deck.addCard(Flashcard("Who is Charlie Kirk?",
                              "He saved America"));
     m_deck.addCard(Flashcard("What is Arch Linux?",
                              "A Linux distro."));
 
-    Deck m_backupDeck = m_deck;
+    m_backupDeck = m_deck;
 
     refreshCardList();
     updateStudyView();
+    m_vimBinds.setupVim();
     statusBar()->showMessage("Welcome! You can add cards, import/export decks, or switch to Study mode.", 5000);
+    QShortcut* insertMode = new QShortcut(QKeySequence(Qt::Key_Insert), this);
+    connect(insertMode, &QShortcut::activated, this, &MainWindow::updateStudyView);
+
 }
 
 void MainWindow::setupMenu() {
@@ -59,6 +78,7 @@ void MainWindow::setupMenu() {
 
     QAction* importAction = fileMenu->addAction("&Import Deck (JSON)...");
     importAction->setShortcut(QKeySequence::Open);
+
     connect(importAction, &QAction::triggered, this, &MainWindow::onImportDeck);
 
     QAction* exportAction = fileMenu->addAction("&Export Deck (JSON)...");
@@ -69,6 +89,14 @@ void MainWindow::setupMenu() {
     exportPDF->setShortcut(QKeySequence::Print);
     connect(exportPDF, &QAction::triggered, this, &MainWindow::onExportPDF);
 
+    QAction* toggleCmdModeAction = new QAction();
+    toggleCmdModeAction->setShortcut(QKeySequence(Qt::Key_Escape));
+    // connect(toggleCmdModeAction, &QAction::triggered, this, m_vimBinds.toggleCmdMode());
+
+    connect(toggleCmdModeAction, &QAction::triggered,
+            this, [this]() {
+                m_vimBinds.toggleCmdMode();
+            });
 
     m_aboutWindow.resize(320, 240);
     m_aboutWindow.setWindowTitle(
@@ -76,12 +104,31 @@ void MainWindow::setupMenu() {
     //QAction* openAbout = fileMenu->addAction("&About Flashcards..");
     QAction* openAbout = menuBar()->addAction("&About Flashcards..");
     connect(openAbout, &QAction::triggered, &m_aboutWindow, &QWidget::show);
-
+    QAction* openVimAbout = menuBar()->addAction("&Vim Keybinds..");
+    connect(openVimAbout, &QAction::triggered, &m_aboutVimWindow, &QWidget::show);
     fileMenu->addSeparator();
 
     QAction* exitAction = fileMenu->addAction("E&xit");
     exitAction->setShortcut(QKeySequence::Quit);
-    connect(exitAction, &QAction::triggered, this, &QWidget::close);
+
+    connect(exitAction, &QAction::triggered, this, &QApplication::closeAllWindows);
+}
+
+bool MainWindow::eventFilter(QObject *watched, QEvent *event) {
+    if (event->type() == QEvent::KeyPress) {
+        QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+        if (m_vimBinds.handleKeyPress(watched, keyEvent)) {
+            return true;
+        }
+    }
+    return QMainWindow::eventFilter(watched, event);
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *event) {
+    if (m_vimBinds.handleKeyPress(this, event)) {
+        return;
+    }
+    QMainWindow::keyPressEvent(event);
 }
 
 void MainWindow::setupAbout() {
@@ -96,6 +143,64 @@ void MainWindow::setupAbout() {
     aboutLayout->addWidget(authorLabel);
     aboutLayout->addWidget(image);
 }
+
+void MainWindow::setupVimAbout() {
+    QVBoxLayout *aboutVim = new QVBoxLayout(&m_aboutVimWindow);
+    QLabel *vimLabel = new QLabel("Vim Keybinds.");
+    QLabel *commandLabel = new QLabel("Command mode labels:");
+    QLabel *writeCMDLabel = new QLabel(":w - save current deck to json");
+    QLabel *inputCMDLabel = new QLabel(":o - inport deck from json");
+    QLabel *quit_noSaveCmdLabel = new QLabel(":q! - quit w/o saving");
+    QLabel *quit_SaveCmdLabel = new QLabel(":wq or :x - quit w/ saving");
+    QLabel *manageLabel = new QLabel(":1 or :manage or :edit - opens editor tab");
+    QLabel *studyLabel = new QLabel(":2 or :study - opens study tab");
+    QLabel *shuffleCMDLabel = new QLabel(":shuff or :shuffle - shuffles card deck");
+    QLabel *searchLabel = new QLabel("/ - searches card deck for query");
+
+
+    //Normal mode
+    QLabel *normalMode = new QLabel("Normal Mode commands:");
+    QLabel *tabSwitch = new QLabel("gt or Tab - Switches tab");
+    QLabel *cmdModeLabel = new QLabel(": - enters command mode");
+    QLabel *insertModeLabel = new QLabel("i, a- enters insert mode");
+    QLabel *openBlankCard = new QLabel("o, or O - opens new blank card");
+
+    QLabel *deleteCard = new QLabel("x or dd - Deletes current card selected");
+    QLabel *moveNext = new QLabel("n or N - while searching n moves down the list and N moves up.");
+
+    QLabel *moveUp = new QLabel("j - moves down the card list on edit tab, and k moves up the list");
+
+
+
+    aboutVim->addWidget(vimLabel);
+    aboutVim->addWidget(vimLabel);
+    aboutVim->addWidget(commandLabel);
+    aboutVim->addWidget(writeCMDLabel);
+    aboutVim->addWidget(inputCMDLabel);
+    aboutVim->addWidget(quit_noSaveCmdLabel);
+    aboutVim->addWidget(quit_SaveCmdLabel);
+    aboutVim->addWidget(manageLabel);
+    aboutVim->addWidget(studyLabel);
+    aboutVim->addWidget(shuffleCMDLabel);
+    aboutVim->addWidget(searchLabel);
+    aboutVim->addSpacing(6);
+
+    aboutVim->addWidget(tabSwitch);
+    aboutVim->addWidget(cmdModeLabel);
+    aboutVim->addWidget(insertModeLabel);
+    aboutVim->addWidget(openBlankCard);
+    aboutVim->addSpacing(6);
+
+    aboutVim->addWidget(deleteCard);
+    aboutVim->addWidget(moveNext);
+    aboutVim->addWidget(moveUp);
+}
+
+
+void MainWindow::setupVimList() {
+    m_cardListWidget->installEventFilter(this);
+}
+
 void MainWindow::setupUi() {
     m_tabWidget = new QTabWidget(this);
     setCentralWidget(m_tabWidget);
@@ -120,6 +225,7 @@ void MainWindow::setupUi() {
     // Add Card button
     QPushButton* addCardBtn = new QPushButton("➕ Add Flashcard");
     addCardBtn->setStyleSheet("font-weight: bold; padding: 6px;");
+    addCardBtn->setDefault(true); //enter button can activate it now.
     connect(addCardBtn, &QPushButton::clicked, this, &MainWindow::onAddCardClicked);
     manageLayout->addWidget(addCardBtn);
 
@@ -130,6 +236,7 @@ void MainWindow::setupUi() {
 
     m_cardListWidget = new QListWidget();
     manageLayout->addWidget(m_cardListWidget);
+    m_cardListWidget->installEventFilter(this);
 
     // Delete Card button and Deck count
     QHBoxLayout* listActionLayout = new QHBoxLayout();
@@ -212,8 +319,12 @@ void MainWindow::setupUi() {
     // Flip Card Button
     m_flipButton = new QPushButton("🔄 Flip Card");
     m_flipButton->setStyleSheet("font-size: 14px; padding: 8px; font-weight: bold;");
-
+    for (auto key : {Qt::Key_Up, Qt::Key_Down, Qt::Key_Space} ) {
+        QShortcut* shortcut = new QShortcut(QKeySequence(key), m_flipButton);
+        connect(shortcut, &QShortcut::activated, m_flipButton, &QPushButton::click);
+    }
     connect(m_flipButton, &QPushButton::clicked, this, &MainWindow::onFlipCardClicked);
+
     connect(m_studyCardDisplay, &ClickableLabel::clicked, this, &MainWindow::onFlipCardClicked);
     connect(m_shuffleCards, &QCheckBox::toggled, this, &MainWindow::onShuffle);
 
@@ -226,6 +337,8 @@ void MainWindow::setupUi() {
     QHBoxLayout* navLayout = new QHBoxLayout();
     m_prevButton = new QPushButton("⬅️ Previous");
     m_nextButton = new QPushButton("Next ➡️");
+    m_prevButton->setShortcut(Qt::Key_Left);
+    m_nextButton->setShortcut(Qt::Key_Right);
     connect(m_prevButton, &QPushButton::clicked, this, &MainWindow::onPrevCardClicked);
     connect(m_nextButton, &QPushButton::clicked, this, &MainWindow::onNextCardClicked);
     navLayout->addWidget(m_prevButton);
@@ -243,30 +356,44 @@ void MainWindow::setupUi() {
     });
 }
 
-void MainWindow::onShuffle() {
+void MainWindow::toggleShuffle() {
+    m_shuffleCards->toggle();
+}
 
-    if (m_shuffleCards->checkState() == Qt::Unchecked) {
-        m_deck = m_backupDeck;
+void MainWindow::onShuffle(bool checked) {
+    if (checked) {
+        if (m_deck.count() <= 1) {
+            statusBar()->showMessage("Add at least 2 cards to shuffle.", 3000);
+            QSignalBlocker blocker(m_shuffleCards);
+            m_shuffleCards->setChecked(false);
+            return;
+        }
+
+        m_backupDeck = m_deck;
+
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::shuffle(m_deck.begin(), m_deck.end(), gen);
+
+        m_currentStudyIndex = 0;
+        m_isShowingAnswer = false;
+        updateStudyView();
+        statusBar()->showMessage("Shuffled!", 3000);
+    } else {
+        if (m_backupDeck.count() == m_deck.count()) {
+            m_deck = m_backupDeck;
+        } else {
+            std::sort(m_deck.begin(), m_deck.end(), [](const Flashcard& a, const Flashcard& b) {
+                return a.getIndex() < b.getIndex();
+            });
+        }
+
         refreshCardList();
         m_currentStudyIndex = 0;
         m_isShowingAnswer = false;
         updateStudyView();
-        statusBar()->showMessage("Restored to default!", 4000);
-        m_shuffleCards->setCheckState(Qt::Unchecked);
-        return;
+        statusBar()->showMessage("Restored to default order!", 3000);
     }
-    if (m_deck.count() <= 1) {
-        statusBar()->showMessage("Add at least 2 cards to shuffle.", 3000);
-        return;
-    }
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::shuffle(m_deck.begin(), m_deck.end(), gen);
-
-    m_currentStudyIndex = 0;
-    m_isShowingAnswer = false;
-    updateStudyView();
-    statusBar()->showMessage("Shuffled!", 4000);
 }
 void MainWindow::refreshCardList() {
     m_cardListWidget->clear();
@@ -315,6 +442,10 @@ void MainWindow::onDeleteCardClicked() {
     m_backupDeck = m_deck;
 
     refreshCardList();
+    if (m_deck.count() > 0) {
+        int nextRow = std::min(row, m_deck.count() - 1);
+        m_cardListWidget->setCurrentRow(nextRow);
+    }
     updateStudyView();
     statusBar()->showMessage("Card removed.", 3000);
 }
