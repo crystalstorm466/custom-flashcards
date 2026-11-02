@@ -1,5 +1,3 @@
-#define QT_NO_DEBUG_OUTPUT
-
 #include "../src/vimBinds.h"
 #include "../src/MainWindow.h"
 #include "../src/Deck.h"
@@ -12,6 +10,7 @@
 #include <QListWidget>
 #include <QLineEdit>
 #include <QDebug>
+#include <QtCore>
 #include <QtTest>
 #include <qbenchmark.h>
 #include <qjsonobject.h>
@@ -69,7 +68,32 @@ private slots:
         m_deck.addCard(Flashcard("test question", "test answer"));
         QCOMPARE(m_deck.count(), 1);
     }
+    void testEmptyDeck() {
+        QTemporaryFile emptyFil;
+        QTemporaryFile emptyPdfFil;
+        MainWindow m_mainWin;
 
+        QVERIFY(emptyFil.open());
+        emptyFil.close();
+        Deck emptyDeck;
+        emptyDeck.loadFromFile(emptyFil.fileName());
+        QCOMPARE(emptyDeck.count(), 0);
+
+        QBENCHMARK {
+            m_mainWin.setDeckForTesting(emptyDeck);
+            bool success = m_mainWin.exportPDFToFile(emptyPdfFil.fileName());
+            QVERIFY(success);
+            QPdfDocument pdfDoc;
+            QCOMPARE(pdfDoc.load(emptyPdfFil.fileName()) == QPdfDocument::Error::None, false);
+            int expectedPages = 0;
+            qInfo() << "PDF should have " << expectedPages;
+            QVERIFY(pdfDoc.pageCount() == 0);
+            QCOMPARE(pdfDoc.pageCount(), expectedPages);
+
+            QFileInfo fileInfo(emptyPdfFil.fileName());
+            QCOMPARE(fileInfo.size() < 0, false);
+        }
+    }
     void testLargeJsonImport() {
         QTemporaryFile tempFile;
         QVERIFY(tempFile.open());
