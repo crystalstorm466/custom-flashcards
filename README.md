@@ -25,7 +25,13 @@ To Compile:
 New Feature: Introducing unit tests
 
 Current tests available:
-- Importing a million card deck and verifying that the cards are imported
+- Test initial state
+- Test exporting empty decks
+- test importing big json files (10k cards) and manipulating them
+- removing and reimporting big json files
+- exporting jsons to pdf and json
+- exporting single card decks
+- testing corrupted card decks from corrupted jsons
 
 Run:
 
