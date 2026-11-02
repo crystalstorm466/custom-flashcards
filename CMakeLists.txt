@@ -40,7 +40,7 @@ qt_add_executable(mytest tests/unitTests.cpp)
 target_link_libraries(mytest PRIVATE Qt6::Widgets Qt6::Test)
 add_test(NAME mytest COMMAND mytest)
 
-qt_add_executable(deckTest tests/test_jsonImports.cpp ${CORE_SOURCES})
+qt_add_executable(deckTest tests/test_decks.cpp ${CORE_SOURCES})
 target_link_libraries(deckTest PRIVATE Qt6::Widgets Qt6::Test Qt6::Pdf)
 add_test(NAME deckTest COMMAND deckTest)
 

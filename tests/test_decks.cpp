@@ -68,6 +68,7 @@ private slots:
         m_deck.addCard(Flashcard("test question", "test answer"));
         QCOMPARE(m_deck.count(), 1);
     }
+
     void testEmptyDeck() {
         QTemporaryFile emptyFil;
         QTemporaryFile emptyPdfFil;
@@ -78,8 +79,13 @@ private slots:
         Deck emptyDeck;
         emptyDeck.loadFromFile(emptyFil.fileName());
         QCOMPARE(emptyDeck.count(), 0);
-
-        QBENCHMARK {
+        QBENCHMARK { //try exporting empty deck to json
+            emptyDeck.loadFromFile(emptyFil.fileName());
+            m_mainWin.setDeckForTesting(emptyDeck);
+            bool success = m_mainWin.onExportDecktoJson(emptyFil.fileName());
+            QVERIFY(success);
+        }
+        QBENCHMARK { //try exporting empty deck to pdf
             m_mainWin.setDeckForTesting(emptyDeck);
             bool success = m_mainWin.exportPDFToFile(emptyPdfFil.fileName());
             QVERIFY(success);
@@ -94,6 +100,7 @@ private slots:
             QCOMPARE(fileInfo.size() < 0, false);
         }
     }
+
     void testLargeJsonImport() {
         QTemporaryFile tempFile;
         QVERIFY(tempFile.open());
@@ -144,7 +151,13 @@ private slots:
 
         Deck testDeck;
         MainWindow m_mainWin;
-        QBENCHMARK {
+        QBENCHMARK { //try exporting deck to json
+            testDeck.loadFromFile(tempFile.fileName());
+            m_mainWin.setDeckForTesting(testDeck);
+            bool success = m_mainWin.onExportDecktoJson(tempFile.fileName());
+            QVERIFY(success);
+        }
+        QBENCHMARK { //try exporting deck to pdf
             testDeck.loadFromFile(tempFile.fileName());
             m_mainWin.setDeckForTesting(testDeck);
             bool success = m_mainWin.exportPDFToFile(tempPDFFile.fileName());
