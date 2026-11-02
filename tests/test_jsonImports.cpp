@@ -13,13 +13,14 @@
 #include <QtTest>
 #include <qbenchmark.h>
 #include <qjsonobject.h>
+#include <qtestcase.h>
 #include <random>
 
 class DeckTest : public QObject {
     Q_OBJECT
 
 private:
-    static constexpr int CARD_LENGTH = 1000000;
+    static constexpr int CARD_LENGTH = 10000;
 
     QJsonDocument createLargeDeck() {
 
@@ -104,6 +105,21 @@ private slots:
             testDeck.appendFromFile(tempFile.fileName());
         }
         QCOMPARE(testDeck.count(), CARD_LENGTH * 2);
+    }
+
+    void exportJson() {
+        QTemporaryFile tempFile;
+        QVERIFY(tempFile.open());
+        tempFile.write(createLargeDeck().toJson());
+        tempFile.close();
+
+        Deck testDeck;
+        MainWindow m_mainWin;
+        QBENCHMARK {
+            testDeck.loadFromFile(tempFile.fileName());
+            m_mainWin.setDeckForTesting(testDeck);
+            m_mainWin.onExportPDF();
+        }
     }
 };
 

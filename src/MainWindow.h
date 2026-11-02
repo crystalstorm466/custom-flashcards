@@ -47,13 +47,15 @@ public:
     void onExportDeck();
     void onExportPDF();
     void onNewDeck();
+    void setDeckForTesting(const Deck& deck) {
+        m_deck = deck;
+    }
 
 private slots:
     // Card Management Slots
     void onAddCardClicked();
     void onDeleteCardClicked();
     void onCardSelected(int currentRow);
-
 
     // Study Mode Slots
     void onFlipCardClicked();
