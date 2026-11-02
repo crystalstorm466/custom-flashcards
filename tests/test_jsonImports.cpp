@@ -109,7 +109,9 @@ private slots:
 
     void exportJson() {
         QTemporaryFile tempFile;
+        QTemporaryFile tempPDFFile;
         QVERIFY(tempFile.open());
+        QVERIFY(tempPDFFile.open());
         tempFile.write(createLargeDeck().toJson());
         tempFile.close();
 
@@ -118,7 +120,12 @@ private slots:
         QBENCHMARK {
             testDeck.loadFromFile(tempFile.fileName());
             m_mainWin.setDeckForTesting(testDeck);
-            m_mainWin.onExportPDF();
+            bool success = m_mainWin.exportPDFToFile(tempPDFFile.fileName());
+            QVERIFY(success);
+
+            QFileInfo fileInfo(tempPDFFile.fileName());
+            QVERIFY(fileInfo.exists());
+            QVERIFY(fileInfo.size() > 0);
         }
     }
 };
