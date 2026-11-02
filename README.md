@@ -15,9 +15,10 @@ To Compile:
 ```
     git clone https://git.cardinalsystem.net/david/custom-flashcards.git
     cd custom-flashcards/
-    cmake -B build -S .
-    cmake --build build 
-    
+    cmake -B build -DCMAKE_BUILD_TYPE=Release -S . (to suppress warnings in terminal)
+    cmake -B build -DCMAKE_BUILD_TYPE=Debug -S . (to show all warnings)
+
+    cmake --build build
 ```
 
 
