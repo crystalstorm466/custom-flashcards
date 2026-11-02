@@ -20,5 +20,19 @@ To Compile:
     
 ```
 
+
+New Feature: Introducing unit tests
+
+Current tests available:
+- Importing a million card deck and verifying that the cards are imported
+
+Run:
+
+```
+./build/deckTest
+
+```
+
+
 Run the flashcards binary inside build/ to run the program. 
 
