@@ -9,6 +9,7 @@
 #include <QListWidget>
 #include <QLineEdit>
 #include <QDebug>
+#include <qapplication.h>
 #include <qlistwidget.h>
 #include <qnamespace.h>
 
@@ -208,6 +209,9 @@ void vimBinds::moveToSearchMatch(bool forward) {
 
 bool vimBinds::handleKeyPress(QObject* watched, QKeyEvent* event) {
     if (!m_window) return false;
+    if (QApplication::activeModalWidget() != nullptr) {
+        return false; //if a file picker dialoge is open or any other model bypass this filter
+    }
 
     int key = event->key();
     QString text = event->text();
@@ -223,7 +227,9 @@ bool vimBinds::handleKeyPress(QObject* watched, QKeyEvent* event) {
 
         bool inFront = (watched == m_window->m_frontInput);
         bool inBack  = (watched == m_window->m_backInput);
-
+           if (!inFront && !inBack && watched != m_window) {
+               return false; //if watched is not recognized (not our inputs or main window) let QT handle it normally instead of us doing it
+        }
         if (inFront || inBack) {
             if (key == Qt::Key_Return || key == Qt::Key_Enter) {
                 if (inFront) {
