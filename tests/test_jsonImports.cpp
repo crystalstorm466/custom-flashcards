@@ -18,19 +18,11 @@
 class DeckTest : public QObject {
     Q_OBJECT
 
-private slots:
+private:
+    static constexpr int CARD_LENGTH = 1000000;
 
-    void testInitalState() {
-        Deck m_deck;
+    QJsonDocument createLargeDeck() {
 
-        m_deck.addCard(Flashcard("test question", "test answer"));
-        QCOMPARE(m_deck.count(), 1);
-    }
-
-    void testLargeJsonImport() {
-        const int CARD_LENGTH = 1000000;
-        QTemporaryFile tempFile;
-        QVERIFY(tempFile.open());
 
         std::random_device rd;
         std::mt19937 gen(rd());
@@ -61,17 +53,57 @@ private slots:
         }
         rootObject["cards"] = cardsArray;
 
-        QJsonDocument doc(rootObject);
-        tempFile.write(doc.toJson());
+        return QJsonDocument(rootObject);
+
+
+    }
+
+private slots:
+
+    void testInitalState() {
+        Deck m_deck;
+        m_deck.addCard(Flashcard("test question", "test answer"));
+        QCOMPARE(m_deck.count(), 1);
+    }
+
+    void testLargeJsonImport() {
+        QTemporaryFile tempFile;
+        QVERIFY(tempFile.open());
+        tempFile.write(createLargeDeck().toJson());
+        tempFile.close();
+
+        Deck testDeck;
+        QBENCHMARK {
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            testDeck.loadFromFile(tempFile.fileName());
+            testDeck.removeCard(gen() % CARD_LENGTH);
+            testDeck.removeCard(gen() % CARD_LENGTH);
+
+            testDeck.reindexCards();
+
+        }
+
+        QCOMPARE(testDeck.count(), CARD_LENGTH-2);
+
+
+    }
+
+    void testRemoveJson() {
+        QTemporaryFile tempFile;
+        QVERIFY(tempFile.open());
+        tempFile.write(createLargeDeck().toJson());
         tempFile.close();
 
         Deck testDeck;
 
         QBENCHMARK {
             testDeck.loadFromFile(tempFile.fileName());
+            testDeck.clear();
+            testDeck.loadFromFile(tempFile.fileName());
+            testDeck.appendFromFile(tempFile.fileName());
         }
-
-        QCOMPARE(testDeck.count(), CARD_LENGTH);
+        QCOMPARE(testDeck.count(), CARD_LENGTH * 2);
     }
 };
 
