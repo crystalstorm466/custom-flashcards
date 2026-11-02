@@ -45,8 +45,9 @@ public:
 // Import / Export Slots
     void onImportDeck();
     void onExportDeck();
-    void onExportPDF();
+//    void onExportPDF();
     void onNewDeck();
+    bool exportPDFToFile(const QString &filePath);
     void setDeckForTesting(const Deck& deck) {
         m_deck = deck;
     }
@@ -56,7 +57,7 @@ private slots:
     void onAddCardClicked();
     void onDeleteCardClicked();
     void onCardSelected(int currentRow);
-
+    void onExportPDF();
     // Study Mode Slots
     void onFlipCardClicked();
     void onNextCardClicked();

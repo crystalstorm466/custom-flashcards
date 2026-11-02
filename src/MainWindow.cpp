@@ -521,22 +521,24 @@ void MainWindow::onExportDeck() {
     statusBar()->showMessage(QString("Deck exported to %1").arg(filePath), 5000);
 }
 
-
 void MainWindow::onExportPDF() {
-    if (m_deck.count() == 0) {
-        QMessageBox::warning(this, "Export PDF", "The deck is currently empty. Add cards before exporting.");
-        return;
-    }
-
     QString filePath = QFileDialog::getSaveFileName(
         this,
         "Export Flashcards",
         "deck.pdf",
         "Portable Document Files (*.pdf);;All files (*)"
     );
+    exportPDFToFile(filePath);
+}
+bool MainWindow::exportPDFToFile(const QString &filePath) {
+    if (m_deck.count() == 0) {
+        QMessageBox::warning(this, "Export PDF", "The deck is currently empty. Add cards before exporting.");
+        return false;
+    }
+
 
     if (filePath.isEmpty()) {
-        return;
+        return false;
     }
 
     QString errorMsg;
@@ -717,7 +719,7 @@ void MainWindow::onExportPDF() {
         file.flush();
         file.close();
         qDebug() << "PDF generated successfully at:" << filePath;
-
+        return true;
 }
 
 void MainWindow::updateStudyView() {
