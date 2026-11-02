@@ -1,3 +1,5 @@
+#define QT_NO_DEBUG_OUTPUT
+
 #include "../src/vimBinds.h"
 #include "../src/MainWindow.h"
 #include "../src/Deck.h"
@@ -15,6 +17,7 @@
 #include <qjsonobject.h>
 #include <qtestcase.h>
 #include <random>
+#include <QtPdf/QPdfDocument>
 
 class DeckTest : public QObject {
     Q_OBJECT
@@ -122,6 +125,12 @@ private slots:
             m_mainWin.setDeckForTesting(testDeck);
             bool success = m_mainWin.exportPDFToFile(tempPDFFile.fileName());
             QVERIFY(success);
+            QPdfDocument pdfDoc;
+            QCOMPARE(pdfDoc.load(tempPDFFile.fileName()), QPdfDocument::Error::None );
+            int expectedPages = (CARD_LENGTH + (6-1) ) / 6;
+            qInfo() << "PDF should have " << expectedPages;
+            QVERIFY(pdfDoc.pageCount() > 0);
+            QCOMPARE(pdfDoc.pageCount(), expectedPages);
 
             QFileInfo fileInfo(tempPDFFile.fileName());
             QVERIFY(fileInfo.exists());

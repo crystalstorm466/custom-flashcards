@@ -718,7 +718,8 @@ bool MainWindow::exportPDFToFile(const QString &filePath) {
         << "startxref\n" << xref_offset << "\n%%EOF\n";
         file.flush();
         file.close();
-        qDebug() << "PDF generated successfully at:" << filePath;
+        statusBar()->showMessage(QString("PDF generated successfully at: %1").arg(filePath), 3000);
+        qInfo() << "PDF generated successfully at:" << filePath;
         return true;
 }
 
