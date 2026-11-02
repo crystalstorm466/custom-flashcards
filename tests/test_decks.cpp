@@ -174,7 +174,28 @@ private slots:
             QVERIFY(fileInfo.size() > 0);
         }
     }
+
+    void singleCard() {
+        QTemporaryFile pdfFile;
+        QVERIFY(pdfFile.open());
+        pdfFile.close();
+
+        Deck testDeck;
+        testDeck.addCard(Flashcard("Single card Q", "Single card A"));
+
+        MainWindow m_main;
+        m_main.setDeckForTesting(testDeck);
+
+        bool success = m_main.exportPDFToFile(pdfFile.fileName());
+        bool json_suc = m_main.onExportDecktoJson(pdfFile.fileName());
+        QVERIFY(success);
+        QVERIFY(json_suc);
+
+        QPdfDocument pdfDoc;
+        QCOMPARE(pdfDoc.load(pdfFile.fileName()), QPdfDocument::Error::None );
+        QCOMPARE(pdfDoc.pageCount(), 1);
+    }
 };
 
 QTEST_MAIN(DeckTest)
-#include "test_jsonImports.moc"
+#include "test_decks.moc"
