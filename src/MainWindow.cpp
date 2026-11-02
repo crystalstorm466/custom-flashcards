@@ -494,13 +494,7 @@ void MainWindow::onImportDeck() {
     updateStudyView();
     statusBar()->showMessage(QString("Imported deck successfully with %1 cards.").arg(m_deck.count()), 5000);
 }
-
 void MainWindow::onExportDeck() {
-    if (m_deck.count() == 0) {
-        QMessageBox::warning(this, "Export Deck", "The deck is currently empty. Add cards before exporting.");
-        return;
-    }
-
     QString filePath = QFileDialog::getSaveFileName(
         this,
         "Export Flashcards",
@@ -511,32 +505,44 @@ void MainWindow::onExportDeck() {
     if (filePath.isEmpty()) {
         return;
     }
+    onExportDecktoJson(filePath);
+
+}
+bool MainWindow::onExportDecktoJson(const QString &filePath) {
+    if (m_deck.count() == 0) {
+        QMessageBox::warning(this, "Export Deck", "The deck is currently empty. Add cards before exporting.");
+        return true;
+    }
+
 
     QString errorMsg;
     if (!m_deck.saveToFile(filePath, &errorMsg)) {
         QMessageBox::critical(this, "Export Error", "Failed to save flashcards:\n" + errorMsg);
-        return;
+        return true;
     }
 
     statusBar()->showMessage(QString("Deck exported to %1").arg(filePath), 5000);
+    return true;
 }
 
-
 void MainWindow::onExportPDF() {
-    if (m_deck.count() == 0) {
-        QMessageBox::warning(this, "Export PDF", "The deck is currently empty. Add cards before exporting.");
-        return;
-    }
-
     QString filePath = QFileDialog::getSaveFileName(
         this,
         "Export Flashcards",
         "deck.pdf",
         "Portable Document Files (*.pdf);;All files (*)"
     );
+    exportPDFToFile(filePath);
+}
+bool MainWindow::exportPDFToFile(const QString &filePath) {
+    if (m_deck.count() == 0) {
+        QMessageBox::warning(this, "Export PDF", "The deck is currently empty. Add cards before exporting.");
+        return true; //technically these boolean are only needed for test cases. user will never see this
+    }
+
 
     if (filePath.isEmpty()) {
-        return;
+        return false;
     }
 
     QString errorMsg;
@@ -716,8 +722,9 @@ void MainWindow::onExportPDF() {
         << "startxref\n" << xref_offset << "\n%%EOF\n";
         file.flush();
         file.close();
-        qDebug() << "PDF generated successfully at:" << filePath;
-
+        statusBar()->showMessage(QString("PDF generated successfully at: %1").arg(filePath), 3000);
+        qInfo() << "PDF generated successfully at:" << filePath;
+        return true;
 }
 
 void MainWindow::updateStudyView() {

@@ -44,17 +44,22 @@ public:
     bool shuffleEnabled;
 // Import / Export Slots
     void onImportDeck();
-    void onExportDeck();
-    void onExportPDF();
+    bool onExportDecktoJson(const QString &filePath);
+//    void onExportDeck();
+//    void onExportPDF();
     void onNewDeck();
+    bool exportPDFToFile(const QString &filePath);
+    void setDeckForTesting(const Deck& deck) {
+        m_deck = deck;
+    }
 
 private slots:
     // Card Management Slots
     void onAddCardClicked();
     void onDeleteCardClicked();
     void onCardSelected(int currentRow);
-
-
+    void onExportDeck();
+    void onExportPDF();
     // Study Mode Slots
     void onFlipCardClicked();
     void onNextCardClicked();
